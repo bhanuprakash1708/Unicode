@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { subMonths, startOfDay, format } from 'date-fns';
 import Chart from 'react-apexcharts';
 
@@ -11,11 +12,19 @@ const RatingChart = ({ ratingHistory }) => {
       rank: contest.rank
     }));
 
-  const options = {
+  const isDark = typeof document !== 'undefined' && document.documentElement.dataset.theme === 'dark';
+  const textMuted = typeof document !== 'undefined'
+    ? getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#94a3b8'
+    : '#94a3b8';
+  const borderMuted = typeof document !== 'undefined'
+    ? getComputedStyle(document.documentElement).getPropertyValue('--border-muted').trim() || 'rgba(148, 163, 184, 0.26)'
+    : 'rgba(148, 163, 184, 0.26)';
+
+  const options = useMemo(() => ({
     chart: {
       type: 'area',
       height: 400,
-      foreColor: '#9CA3AF',
+      foreColor: textMuted,
       toolbar: { show: true },
       zoom: { enabled: false },
       background: 'transparent'
@@ -37,7 +46,7 @@ const RatingChart = ({ ratingHistory }) => {
       min: sixMonthsAgo,
       max: new Date().getTime(),
       labels: {
-        style: { colors: '#9CA3AF' },
+        style: { colors: textMuted },
         format: 'MMM dd',
         rotate: -45
       },
@@ -45,12 +54,12 @@ const RatingChart = ({ ratingHistory }) => {
     },
     yaxis: {
       labels: { 
-        style: { colors: '#9CA3AF' } 
+        style: { colors: textMuted } 
       },
       forceNiceScale: true
     },
     annotations: {
-      points: filteredData.map((contest, idx) => ({
+      points: filteredData.map((contest) => ({
         x: contest.x,
         y: contest.y,
         marker: {
@@ -71,16 +80,16 @@ const RatingChart = ({ ratingHistory }) => {
       }))
     },
     tooltip: {
-      theme: 'dark',
+      theme: isDark ? 'dark' : 'light',
       x: {
         formatter: (val) => format(new Date(val), 'MMM dd, yyyy HH:mm')
       }
     },
     grid: {
-      borderColor: 'rgba(156, 163, 175, 0.2)',
+      borderColor: borderMuted,
       strokeDashArray: 4
     }
-  };
+  }), [borderMuted, filteredData, isDark, sixMonthsAgo, textMuted]);
 
   const series = [{
     name: 'Rating',
@@ -88,8 +97,8 @@ const RatingChart = ({ ratingHistory }) => {
   }];
 
   return (
-    <div className="bg-gray-800 rounded-xl shadow-lg border border-gray-700 p-6">
-      <h3 className="text-xl font-semibold text-blue-400 mb-4">
+    <div className="rounded-xl border border-[var(--border-muted)] bg-[var(--surface)] p-6 shadow-lg backdrop-blur-sm">
+      <h3 className="mb-4 text-xl font-semibold text-[var(--brand-color)]">
         Rating History (Last 6 Months)
       </h3>
       <Chart 

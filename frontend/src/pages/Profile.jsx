@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Code, Cpu, HardDrive, User, Mail, Check, X, Save, Edit, LogOut, Loader2, MapPin, Github, Linkedin, BookOpen, VenetianMask } from 'lucide-react';
+import { Code, Cpu, HardDrive, User, Mail, Check, X, Save, Edit, Loader2, MapPin, Github, Linkedin, BookOpen, VenetianMask } from 'lucide-react';
 import { UserAuth } from '../context/AuthContext';
 import Header from '../components/Header';
 import { useNavigate } from 'react-router-dom';
@@ -49,7 +49,7 @@ export default function Profile() {
     codechef_username: false,
     leetcode_username: false,
   });
-  const { session, signOut } = UserAuth();
+  const { session } = UserAuth();
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_BACKEND_URL;
 
@@ -114,7 +114,7 @@ export default function Profile() {
       }
     };
     fetchProfile();
-  }, [session, navigate]);
+  }, [API_BASE, session, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -196,34 +196,24 @@ export default function Profile() {
     }
   };
 
-  const handleLogout = async () => {
-    if (window.confirm('Are you sure you want to logout?')) {
-      try {
-        await signOut();
-      } catch (error) {
-        setError(error.message);
-      }
-    }
-  };
-
   const hasChanges = JSON.stringify(profileData) !== JSON.stringify(initialData);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-app flex flex-col items-center justify-center text-[var(--text-primary)]">
         <Loader2 className="h-12 w-12 animate-spin text-blue-500" />
-        <p className="mt-4 text-gray-700 dark:text-gray-300">Loading profile...</p>
+        <p className="mt-4 text-[var(--text-muted)]">Loading profile...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex flex-col">
+    <div className="min-h-screen bg-app flex flex-col text-[var(--text-primary)]">
       <Header />
       <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <motion.h2
-            className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-white"
+            className="mt-6 text-3xl font-extrabold text-[var(--text-primary)]"
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
@@ -238,10 +228,10 @@ export default function Profile() {
           initial="hidden"
           animate="visible"
         >
-          <div className="bg-white dark:bg-gray-800 py-8 px-6 shadow-lg rounded-lg">
+          <div className="rounded-2xl border border-[var(--border-muted)] bg-[var(--surface)] px-6 py-8 shadow-lg backdrop-blur-sm">
             {error && (
               <motion.div
-                className="mb-6 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-md"
+                className="mb-6 border border-red-500/40 bg-red-500/10 text-red-300 px-4 py-3 rounded-md"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
               >
@@ -253,7 +243,7 @@ export default function Profile() {
             )}
             {success && (
               <motion.div
-                className="mb-6 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded-md"
+                className="mb-6 border border-green-500/40 bg-green-500/10 text-green-300 px-4 py-3 rounded-md"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
               >
@@ -270,13 +260,13 @@ export default function Profile() {
                 <div className="space-y-6">
                   <motion.div variants={itemVariants}>
                     <div className="flex justify-between items-center">
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <label htmlFor="name" className="block text-sm font-medium text-[var(--text-muted)]">
                         Full Name
                       </label>
                       <button
                         type="button"
                         onClick={() => toggleEdit('name')}
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                        className="text-[var(--brand-color)] hover:opacity-80"
                       >
                         {editableFields.name ? (
                           <X className="h-4 w-4" onClick={() => cancelEdit()} />
@@ -287,7 +277,7 @@ export default function Profile() {
                     </div>
                     <div className="mt-1 relative rounded-md shadow-sm">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <User className="h-5 w-5 text-gray-400" />
+                        <User className="h-5 w-5 text-[var(--text-muted)]" />
                       </div>
                       <input
                         id="name"
@@ -298,8 +288,8 @@ export default function Profile() {
                         readOnly={!editableFields.name}
                         className={`block w-full pl-10 pr-3 py-2 border rounded-md ${
                           editableFields.name
-                            ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed border-transparent'
+                            ? 'bg-[var(--surface-strong)] text-[var(--text-primary)] border-[var(--border-muted)]'
+                            : 'bg-[var(--surface-muted)] text-[var(--text-muted)] cursor-not-allowed border-[var(--border-muted)]'
                         } sm:text-sm`}
                         required
                       />
@@ -308,17 +298,17 @@ export default function Profile() {
 
                   <motion.div variants={itemVariants}>
                     <div className="flex justify-between items-center">
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <label htmlFor="email" className="block text-sm font-medium text-[var(--text-muted)]">
                         Email
                       </label>
                       <div className="flex items-center">
-                        <span className="text-xs text-green-600 dark:text-green-400 mr-1">Verified</span>
-                        <MdVerified className="h-4 w-4 text-green-500 dark:text-green-400" />
+                        <span className="mr-1 text-xs text-green-400">Verified</span>
+                        <MdVerified className="h-4 w-4 text-green-400" />
                       </div>
                     </div>
                     <div className="mt-1 relative rounded-md shadow-sm">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Mail className="h-5 w-5 text-gray-400" />
+                        <Mail className="h-5 w-5 text-[var(--text-muted)]" />
                       </div>
                       <input
                         id="email"
@@ -326,20 +316,20 @@ export default function Profile() {
                         type="email"
                         value={profileData.email}
                         readOnly={true}
-                        className="block w-full pl-10 pr-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-md border-transparent cursor-not-allowed sm:text-sm"
+                        className="block w-full pl-10 pr-3 py-2 bg-[var(--surface-muted)] text-[var(--text-muted)] rounded-md border border-[var(--border-muted)] cursor-not-allowed sm:text-sm"
                       />
                     </div>
                   </motion.div>
 
                   <motion.div variants={itemVariants}>
                     <div className="flex justify-between items-center">
-                      <label htmlFor="gender" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <label htmlFor="gender" className="block text-sm font-medium text-[var(--text-muted)]">
                         Gender
                       </label>
                       <button
                         type="button"
                         onClick={() => toggleEdit('gender')}
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                        className="text-[var(--brand-color)] hover:opacity-80"
                       >
                         {editableFields.gender ? (
                           <X className="h-4 w-4" onClick={() => cancelEdit()} />
@@ -350,7 +340,7 @@ export default function Profile() {
                     </div>
                     <div className="mt-1 relative rounded-md shadow-sm">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <VenetianMask className="h-5 w-5 text-gray-400" />
+                        <VenetianMask className="h-5 w-5 text-[var(--text-muted)]" />
                       </div>
                       <input
                         id="gender"
@@ -361,8 +351,8 @@ export default function Profile() {
                         readOnly={!editableFields.gender}
                         className={`block w-full pl-10 pr-3 py-2 border rounded-md ${
                           editableFields.gender
-                            ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed border-transparent'
+                            ? 'bg-[var(--surface-strong)] text-[var(--text-primary)] border-[var(--border-muted)]'
+                            : 'bg-[var(--surface-muted)] text-[var(--text-muted)] cursor-not-allowed border-[var(--border-muted)]'
                         } sm:text-sm`}
                         placeholder="e.g. Male, Female, Non-binary"
                       />
@@ -371,13 +361,13 @@ export default function Profile() {
 
                   <motion.div variants={itemVariants}>
                     <div className="flex justify-between items-center">
-                      <label htmlFor="location" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <label htmlFor="location" className="block text-sm font-medium text-[var(--text-muted)]">
                         Location
                       </label>
                       <button
                         type="button"
                         onClick={() => toggleEdit('location')}
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                        className="text-[var(--brand-color)] hover:opacity-80"
                       >
                         {editableFields.location ? (
                           <X className="h-4 w-4" onClick={() => cancelEdit()} />
@@ -388,7 +378,7 @@ export default function Profile() {
                     </div>
                     <div className="mt-1 relative rounded-md shadow-sm">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <MapPin className="h-5 w-5 text-gray-400" />
+                        <MapPin className="h-5 w-5 text-[var(--text-muted)]" />
                       </div>
                       <input
                         id="location"
@@ -399,8 +389,8 @@ export default function Profile() {
                         readOnly={!editableFields.location}
                         className={`block w-full pl-10 pr-3 py-2 border rounded-md ${
                           editableFields.location
-                            ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed border-transparent'
+                            ? 'bg-[var(--surface-strong)] text-[var(--text-primary)] border-[var(--border-muted)]'
+                            : 'bg-[var(--surface-muted)] text-[var(--text-muted)] cursor-not-allowed border-[var(--border-muted)]'
                         } sm:text-sm`}
                         placeholder="e.g. New York, USA"
                       />
@@ -409,13 +399,13 @@ export default function Profile() {
 
                   <motion.div variants={itemVariants}>
                     <div className="flex justify-between items-center">
-                      <label htmlFor="education" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <label htmlFor="education" className="block text-sm font-medium text-[var(--text-muted)]">
                         Education
                       </label>
                       <button
                         type="button"
                         onClick={() => toggleEdit('education')}
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                        className="text-[var(--brand-color)] hover:opacity-80"
                       >
                         {editableFields.education ? (
                           <X className="h-4 w-4" onClick={() => cancelEdit()} />
@@ -426,7 +416,7 @@ export default function Profile() {
                     </div>
                     <div className="mt-1 relative rounded-md shadow-sm">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <BookOpen className="h-5 w-5 text-gray-400" />
+                        <BookOpen className="h-5 w-5 text-[var(--text-muted)]" />
                       </div>
                       <input
                         id="education"
@@ -437,8 +427,8 @@ export default function Profile() {
                         readOnly={!editableFields.education}
                         className={`block w-full pl-10 pr-3 py-2 border rounded-md ${
                           editableFields.education
-                            ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed border-transparent'
+                            ? 'bg-[var(--surface-strong)] text-[var(--text-primary)] border-[var(--border-muted)]'
+                            : 'bg-[var(--surface-muted)] text-[var(--text-muted)] cursor-not-allowed border-[var(--border-muted)]'
                         } sm:text-sm`}
                         placeholder="e.g. University of Example, BSc Computer Science"
                       />
@@ -450,13 +440,13 @@ export default function Profile() {
                 <div className="space-y-6">
                   <motion.div variants={itemVariants}>
                     <div className="flex justify-between items-center">
-                      <label htmlFor="github" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <label htmlFor="github" className="block text-sm font-medium text-[var(--text-muted)]">
                         GitHub Username
                       </label>
                       <button
                         type="button"
                         onClick={() => toggleEdit('github')}
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                        className="text-[var(--brand-color)] hover:opacity-80"
                       >
                         {editableFields.github ? (
                           <X className="h-4 w-4" onClick={() => cancelEdit()} />
@@ -467,7 +457,7 @@ export default function Profile() {
                     </div>
                     <div className="mt-1 relative rounded-md shadow-sm">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Github className="h-5 w-5 text-gray-400" />
+                        <Github className="h-5 w-5 text-[var(--text-muted)]" />
                       </div>
                       <input
                         id="github"
@@ -478,8 +468,8 @@ export default function Profile() {
                         readOnly={!editableFields.github}
                         className={`block w-full pl-10 pr-3 py-2 border rounded-md ${
                           editableFields.github
-                            ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed border-transparent'
+                            ? 'bg-[var(--surface-strong)] text-[var(--text-primary)] border-[var(--border-muted)]'
+                            : 'bg-[var(--surface-muted)] text-[var(--text-muted)] cursor-not-allowed border-[var(--border-muted)]'
                         } sm:text-sm`}
                         placeholder="your GitHub username"
                       />
@@ -488,13 +478,13 @@ export default function Profile() {
 
                   <motion.div variants={itemVariants}>
                     <div className="flex justify-between items-center">
-                      <label htmlFor="linkedin" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <label htmlFor="linkedin" className="block text-sm font-medium text-[var(--text-muted)]">
                         LinkedIn Profile
                       </label>
                       <button
                         type="button"
                         onClick={() => toggleEdit('linkedin')}
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                        className="text-[var(--brand-color)] hover:opacity-80"
                       >
                         {editableFields.linkedin ? (
                           <X className="h-4 w-4" onClick={() => cancelEdit()} />
@@ -505,7 +495,7 @@ export default function Profile() {
                     </div>
                     <div className="mt-1 relative rounded-md shadow-sm">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Linkedin className="h-5 w-5 text-gray-400" />
+                        <Linkedin className="h-5 w-5 text-[var(--text-muted)]" />
                       </div>
                       <input
                         id="linkedin"
@@ -516,8 +506,8 @@ export default function Profile() {
                         readOnly={!editableFields.linkedin}
                         className={`block w-full pl-10 pr-3 py-2 border rounded-md ${
                           editableFields.linkedin
-                            ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed border-transparent'
+                            ? 'bg-[var(--surface-strong)] text-[var(--text-primary)] border-[var(--border-muted)]'
+                            : 'bg-[var(--surface-muted)] text-[var(--text-muted)] cursor-not-allowed border-[var(--border-muted)]'
                         } sm:text-sm`}
                         placeholder="your LinkedIn username or profile URL"
                       />
@@ -532,13 +522,13 @@ export default function Profile() {
                   ].map(({ id, icon: Icon, label, maxLength }) => (
                     <motion.div key={id} variants={itemVariants}>
                       <div className="flex justify-between items-center">
-                        <label htmlFor={id} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        <label htmlFor={id} className="block text-sm font-medium text-[var(--text-muted)]">
                           {label}
                         </label>
                         <button
                           type="button"
                           onClick={() => toggleEdit(id)}
-                          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                          className="text-[var(--brand-color)] hover:opacity-80"
                         >
                           {editableFields[id] ? (
                             <X className="h-4 w-4" onClick={() => cancelEdit()} />
@@ -549,7 +539,7 @@ export default function Profile() {
                       </div>
                       <div className="mt-1 relative rounded-md shadow-sm">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Icon className="h-5 w-5 text-gray-400" />
+                          <Icon className="h-5 w-5 text-[var(--text-muted)]" />
                         </div>
                         <input
                           id={id}
@@ -561,14 +551,14 @@ export default function Profile() {
                           maxLength={maxLength}
                           className={`block w-full pl-10 pr-3 py-2 border rounded-md ${
                             editableFields[id]
-                              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600'
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed border-transparent'
+                              ? 'bg-[var(--surface-strong)] text-[var(--text-primary)] border-[var(--border-muted)]'
+                              : 'bg-[var(--surface-muted)] text-[var(--text-muted)] cursor-not-allowed border-[var(--border-muted)]'
                           } sm:text-sm`}
                           placeholder={`${label}`}
                         />
                       </div>
                       {editableFields[id] && (
-                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        <p className="mt-1 text-xs text-[var(--text-muted)]">
                           {profileData[id]?.length || 0}/{maxLength} characters
                         </p>
                       )}
@@ -580,22 +570,14 @@ export default function Profile() {
               {/* Action Buttons */}
               <motion.div
                 variants={itemVariants}
-                className="flex justify-between items-center pt-6 border-t border-gray-200 dark:border-gray-700"
+                className="flex justify-end items-center pt-6 border-t border-[var(--border-muted)]"
               >
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
-                </button>
                 <div className="flex space-x-2">
                   {hasChanges && (
                     <button
                       type="button"
                       onClick={cancelEdit}
-                      className="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                      className="inline-flex items-center rounded-md border border-[var(--border-muted)] bg-[var(--surface-muted)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] shadow-sm transition-colors hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:ring-offset-2"
                     >
                       Cancel
                     </button>
@@ -605,7 +587,7 @@ export default function Profile() {
                     disabled={!hasChanges || isSaving}
                     className={`inline-flex items-center px-4 py-2 text-white text-sm font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                       !hasChanges || isSaving
-                        ? 'bg-gray-400 cursor-not-allowed focus:ring-gray-500'
+                        ? 'bg-[var(--text-muted)]/60 cursor-not-allowed focus:ring-[var(--ring)]'
                         : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
                     } transition-colors`}
                   >
@@ -630,3 +612,5 @@ export default function Profile() {
     </div>
   );
 }
+
+

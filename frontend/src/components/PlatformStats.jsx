@@ -8,7 +8,7 @@ const PlatformStats = ({ contests, loading }) => {
       };
       
       contests.forEach(contest => {
-        if (counts.hasOwnProperty(contest.platform)) {
+        if (Object.prototype.hasOwnProperty.call(counts, contest.platform)) {
           counts[contest.platform]++;
         }
       });

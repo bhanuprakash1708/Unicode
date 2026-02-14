@@ -61,7 +61,7 @@ export default function ProfileForm() {
     };
 
     fetchProfile();
-  }, [session]);
+  }, [API_BASE, session]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -109,7 +109,7 @@ export default function ProfileForm() {
   
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex flex-col py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-app flex flex-col py-12 text-[var(--text-primary)] sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
           <motion.h2 

@@ -22,7 +22,7 @@ const ProfileCard = ({ user }) => {
     <motion.div
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gray-800 rounded-xl shadow-lg border border-gray-700 p-6"
+      className="rounded-xl border border-[var(--border-muted)] bg-[var(--surface)] p-6 shadow-lg backdrop-blur-sm"
     >
       <div className="flex flex-col items-center gap-4 mb-6">
         <motion.div
@@ -34,14 +34,14 @@ const ProfileCard = ({ user }) => {
 
         <div className="text-center">
           <motion.h2 
-            className="text-3xl font-bold text-white"
+            className="text-3xl font-bold text-[var(--text-primary)]"
             initial={{ scale: 0.9 }}
             animate={{ scale: 1 }}
           >
             {user.handle}
           </motion.h2>
           <motion.p 
-            className="text-lg text-blue-400 mt-1 capitalize"
+            className="mt-1 text-lg capitalize text-[var(--brand-color)]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
@@ -57,15 +57,15 @@ const ProfileCard = ({ user }) => {
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.2 + index * 0.1 }}
-            className="bg-gray-700/50 p-4 rounded-lg"
+            className="rounded-lg border border-[var(--border-muted)] bg-[var(--surface-strong)] p-4"
           >
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-900/50 rounded-lg text-blue-400">
+              <div className="rounded-lg bg-[var(--brand-soft)] p-2 text-[var(--brand-color)]">
                 {stat.icon}
               </div>
               <div>
-                <p className="text-sm text-gray-400 mb-1">{stat.label}</p>
-                <p className="text-xl font-semibold text-white">
+                <p className="mb-1 text-sm text-[var(--text-muted)]">{stat.label}</p>
+                <p className="text-xl font-semibold text-[var(--text-primary)]">
                   {stat.value}
                 </p>
               </div>
@@ -79,7 +79,7 @@ const ProfileCard = ({ user }) => {
         animate={{ opacity: 1 }}
         className="grid grid-cols-2 gap-4"
       >
-        <div className="bg-gray-700/50 p-4 rounded-lg">
+        <div className="rounded-lg border border-[var(--border-muted)] bg-[var(--surface-strong)] p-4">
           <div className="flex items-center gap-2 text-green-400">
             <FiTrendingUp className="h-5 w-5" />
             <h3 className="font-semibold">Rating Change</h3>
@@ -89,22 +89,22 @@ const ProfileCard = ({ user }) => {
               {user.rating - user.maxRating >= 0 ? '+' : ''}
               {user.rating - user.maxRating}
             </span>
-            <span className="ml-2 text-sm text-gray-400">
+            <span className="ml-2 text-sm text-[var(--text-muted)]">
               from peak
             </span>
           </div>
         </div>
 
-        <div className="bg-gray-700/50 p-4 rounded-lg">
+        <div className="rounded-lg border border-[var(--border-muted)] bg-[var(--surface-strong)] p-4">
           <div className="flex items-center gap-2 text-yellow-400">
             <FiAward className="h-5 w-5" />
             <h3 className="font-semibold">Achievements</h3>
           </div>
           <div className="mt-2">
-            <span className="text-xl font-bold text-white">
+            <span className="text-xl font-bold text-[var(--text-primary)]">
               {user.contests || 0}
             </span>
-            <span className="ml-2 text-sm text-gray-400">
+            <span className="ml-2 text-sm text-[var(--text-muted)]">
               contests attended
             </span>
           </div>

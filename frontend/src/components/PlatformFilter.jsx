@@ -1,6 +1,4 @@
 // src/components/PlatformFilter.jsx
-import { motion } from 'framer-motion';
-
 const platforms = [
   { id: 'all', name: 'All Platforms' },
   { id: 'leetcode', name: 'LeetCode' },
@@ -12,19 +10,18 @@ const PlatformFilter = ({ selectedPlatform, setSelectedPlatform }) => {
   return (
     <div className="flex flex-wrap gap-2">
       {platforms.map((platform) => (
-        <motion.button
+        <button
           key={platform.id}
+          type="button"
           onClick={() => setSelectedPlatform(platform.id)}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+          className={`rounded-full px-4 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] ${
             selectedPlatform === platform.id
-              ? 'bg-purple-500/30 backdrop-blur-sm text-white'
-              : 'bg-white/5 hover:bg-white/10 text-gray-300'
+              ? 'bg-[var(--brand-color)] text-white'
+              : 'border border-[var(--border-muted)] bg-[var(--surface-strong)] text-[var(--text-primary)] hover:bg-[var(--surface-muted)]'
           }`}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
         >
           {platform.name}
-        </motion.button>
+        </button>
       ))}
     </div>
   );

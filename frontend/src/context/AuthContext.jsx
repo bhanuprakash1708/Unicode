@@ -30,7 +30,7 @@ export const AuthContextProvider = ({ children }) => {
                     setUser(session?.user ?? null);
                     setLoading(false);
                 }
-            } catch (error) {
+            } catch {
                 if (mounted) {
                     setSession(null);
                     setUser(null);
@@ -69,15 +69,10 @@ export const AuthContextProvider = ({ children }) => {
     };
 
     const signOut = async () => {
-        try {
-            const { error } = await supabase.auth.signOut();
-            if (error) throw error;
-            
-            setSession(null);
-            setUser(null);
-        } catch (error) {
-            throw error;
-        }
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+        setSession(null);
+        setUser(null);
     };
 
     const value = {

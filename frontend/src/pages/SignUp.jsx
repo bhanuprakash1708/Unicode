@@ -85,7 +85,7 @@ export default function SignUp() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-app flex flex-col justify-center py-12 text-[var(--text-primary)] sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
           <motion.div
@@ -94,11 +94,11 @@ export default function SignUp() {
             transition={{ duration: 0.5 }}
           >
             <Link to="/" className="inline-flex items-center">
-              <span className="text-3xl font-bold text-blue-600 dark:text-blue-400">CPier</span>
+              <span className="text-3xl font-bold text-[var(--brand-color)]">Unicode</span>
             </Link>
           </motion.div>
           <motion.h2
-            className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-white"
+            className="mt-6 text-3xl font-extrabold text-[var(--text-primary)]"
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
@@ -106,7 +106,7 @@ export default function SignUp() {
             Create your account
           </motion.h2>
           <motion.p
-            className="mt-2 text-sm text-gray-600 dark:text-gray-400"
+            className="mt-2 text-sm text-[var(--text-muted)]"
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3 }}
@@ -124,7 +124,7 @@ export default function SignUp() {
           initial="hidden"
           animate="visible"
         >
-          <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow-lg sm:rounded-lg sm:px-10">
+          <div className="rounded-lg border border-[var(--border-muted)] bg-[var(--surface)] px-4 py-8 shadow-lg sm:px-10">
             {error && (
               <motion.div
                 className="mb-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-md"

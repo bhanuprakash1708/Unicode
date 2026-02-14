@@ -1,10 +1,29 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import LeetCodeStats from '../components/LeetCodeStats';
 import Header from '../components/Header';
 import { useUserProfile } from '../context/UserProfileContext';
 import { useNavigate } from 'react-router-dom';
 import { UserAuth } from '../context/AuthContext';
+import SixMonthActivityCard from '../components/SixMonthActivityCard';
+
+const toDateKeyedCalendar = (calendar = {}) => {
+  const mapped = {};
+  Object.entries(calendar).forEach(([key, value]) => {
+    const count = Number(value) || 0;
+    if (key.includes('-')) {
+      mapped[key] = (mapped[key] || 0) + count;
+      return;
+    }
+
+    const timestamp = Number(key);
+    if (!Number.isFinite(timestamp)) return;
+    const date = new Date(timestamp * 1000);
+    const dateKey = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+    mapped[dateKey] = (mapped[dateKey] || 0) + count;
+  });
+  return mapped;
+};
 
 const NoUserNameFound = ({ service = "LeetCode", redirectPath = "/profile" }) => {
   const navigate = useNavigate();
@@ -15,10 +34,9 @@ const NoUserNameFound = ({ service = "LeetCode", redirectPath = "/profile" }) =>
   
   return (
     <div className="flex flex-col items-center justify-center py-4 px-4 text-center">
-      {/* Sad face icon circle */}
-      <div className="bg-gray-700 rounded-full p-6 mb-6">
+      <div className="mb-6 rounded-full border border-[var(--border-muted)] bg-[var(--surface-muted)] p-6">
         <svg 
-          className="w-12 h-12 text-gray-400" 
+          className="h-12 w-12 text-[var(--text-muted)]" 
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24"
@@ -34,18 +52,16 @@ const NoUserNameFound = ({ service = "LeetCode", redirectPath = "/profile" }) =>
         </svg>
       </div>
       
-      {/* Message text */}
-      <h2 className="text-xl font-bold text-white mb-4">
+      <h2 className="mb-4 text-xl font-bold text-[var(--text-primary)]">
         No {service} Username Found
       </h2>
-      <p className="text-gray-400 mb-8">
+      <p className="mb-8 text-[var(--text-muted)]">
         Please add your {service} username to your profile to view your statistics.
       </p>
-      
-      {/* Action button */}
+
       <button 
         onClick={handleGoToProfile}
-        className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-lg transition-colors w-64"
+        className="w-64 rounded-lg bg-[var(--brand-color)] px-8 py-3 font-medium text-white transition-opacity hover:opacity-90"
       >
         Go to Profile
       </button>
@@ -56,11 +72,17 @@ const NoUserNameFound = ({ service = "LeetCode", redirectPath = "/profile" }) =>
 const LeetcodePage = () => {
   const { profileData, error: profileError } = useUserProfile();
   const [username, setUsername] = useState(null);
+  const [statsData, setStatsData] = useState(null);
   const { session, loading: authLoading } = UserAuth();
   const API_BASE = import.meta.env.VITE_BACKEND_URL ?? '';
 
+  const leetcodeCalendar = useMemo(
+    () => toDateKeyedCalendar(statsData?.submissionCalendar || {}),
+    [statsData?.submissionCalendar]
+  );
+
   // Function to upsert LeetCode data with null values
-  const upsertLeetCodeData = async () => {
+  const upsertLeetCodeData = useCallback(async () => {
     try {
       if (!session) return;
 
@@ -102,7 +124,7 @@ const LeetcodePage = () => {
     } catch (err) {
       console.error('Error upserting LeetCode data:', err);
     }
-  };
+  }, [API_BASE, session]);
 
   useEffect(() => {
     if (profileData) {
@@ -112,7 +134,7 @@ const LeetcodePage = () => {
         upsertLeetCodeData();
       }
     }
-  }, [profileData, session]);
+  }, [profileData, session, upsertLeetCodeData]);
 
   if (profileError) {
     return (
@@ -131,23 +153,29 @@ const LeetcodePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white">
+    <div className="min-h-screen bg-app text-[var(--text-primary)]">
       <Header />
       <main className="container mx-auto px-4 py-8">
         <motion.div
           layout
-          className="mb-8 max-w-4xl mx-auto p-6 bg-gray-800 rounded-2xl shadow-lg border border-gray-700"
+          className="mb-8 mx-auto max-w-4xl rounded-2xl border border-[var(--border-muted)] bg-[var(--surface)] p-6 shadow-lg backdrop-blur-sm"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-2xl font-bold text-blue-400 mb-4">LeetCode Stats</h2>
+          <h2 className="mb-4 text-2xl font-bold text-[var(--brand-color)]">LeetCode Stats</h2>
           {username ? (
-            <LeetCodeStats username={username} />
+            <LeetCodeStats username={username} onDataLoaded={setStatsData} />
           ) : (
             <NoUserNameFound service="LeetCode" redirectPath="/profile" />
           )}
         </motion.div>
+
+        {username && Object.keys(leetcodeCalendar).length > 0 ? (
+          <div className="mx-auto max-w-4xl">
+            <SixMonthActivityCard submissionCalendar={leetcodeCalendar} />
+          </div>
+        ) : null}
       </main>
     </div>
   );

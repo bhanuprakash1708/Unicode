@@ -27,7 +27,7 @@ const itemVariants = {
 
 export default function PP() {
   return (
- <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+ <div className="flex min-h-screen flex-col bg-app text-[var(--text-primary)]">
       {/* Header */}
       <motion.div
         className="pt-32 pb-12 md:pt-40 md:pb-20"
@@ -38,14 +38,14 @@ export default function PP() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <motion.h1
-              className="text-4xl tracking-tight font-extrabold text-gray-900 dark:text-white sm:text-5xl md:text-6xl"
+              className="text-4xl tracking-tight font-extrabold text-[var(--text-primary)] sm:text-5xl md:text-6xl"
               variants={itemVariants}
             >
               <span className="block">CPier</span>
-              <span className="block text-blue-600 dark:text-blue-400">Privacy Policy</span>
+              <span className="block text-[var(--brand-color)]">Privacy Policy</span>
             </motion.h1>
             <motion.p
-              className="mt-3 max-w-md mx-auto text-base text-gray-500 dark:text-gray-400 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl"
+              className="mx-auto mt-3 max-w-md text-base text-[var(--text-muted)] sm:text-lg md:mt-5 md:max-w-3xl md:text-xl"
               variants={itemVariants}
             >
               Last updated: {new Date().toLocaleDateString()}
@@ -57,7 +57,7 @@ export default function PP() {
       {/* Privacy Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
         <motion.div 
-          className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 md:p-8"
+          className="rounded-lg border border-[var(--border-muted)] bg-[var(--surface)] p-6 shadow-md md:p-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}

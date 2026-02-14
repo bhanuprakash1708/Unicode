@@ -1,23 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useUserProfile } from '../context/UserProfileContext';
-import { UserAuth } from '../context/AuthContext';
 import {
   CalendarDaysIcon,
   ArrowPathIcon,
-  TrashIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
-
-const getContestId = (contest) => {
-  return `${contest.title}-${contest.startTime}-${contest.platform}`;
-};
 
 export default function GoogleCalendarButton({ contest }) {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(null);
   const { profileData } = useUserProfile();
-  const { session } = UserAuth();
-  const contestId = getContestId(contest);
 
   const validateContest = () => {
     if (!contest.startTime || !contest.endTime) {
@@ -63,7 +55,7 @@ export default function GoogleCalendarButton({ contest }) {
 
       const details = [
         `Platform: ${contest.platform}`,
-        `Duration: ${contest.duration} minutes`,
+        `Duration: ${contest.durationMinutes || contest.duration || 0} minutes`,
         contest.url ? `URL: ${contest.url}` : ''
       ].filter(Boolean).join('\n\n');
       
@@ -102,9 +94,9 @@ export default function GoogleCalendarButton({ contest }) {
         <button
           onClick={createCalendarLink}
           disabled={loading}
-          className={`mt-2 flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors ${
-            loading ? 'bg-blue-700' : 'bg-blue-600 hover:bg-blue-700'
-          } text-white`}
+          className={`mt-2 flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-white transition-opacity ${
+            loading ? 'bg-[var(--brand-color)]/70' : 'bg-[var(--brand-color)] hover:opacity-90'
+          }`}
           aria-label="Add to Google Calendar"
         >
           {loading ? (

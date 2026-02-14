@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 
 const RatingGraph = ({ stats }) => {
@@ -12,14 +12,6 @@ const RatingGraph = ({ stats }) => {
   const [startPan, setStartPan] = useState({ x: 0, y: 0 });
 
   const contestHistory = stats?.contestHistory || [];
-
-  if (!contestHistory.length) {
-    return (
-      <motion.div className="bg-white/10 p-6 rounded-xl backdrop-blur text-center shadow-lg">
-        <p className="text-gray-300">No contest history found</p>
-      </motion.div>
-    );
-  }
 
   const currentRating = stats?.rating || contestHistory.at(-1)?.rating || 'N/A';
   const minRating = Math.min(...contestHistory.map(c => c.rating)) - 10;
@@ -51,11 +43,11 @@ const RatingGraph = ({ stats }) => {
     }
   };
 
-  const handleWheel = (e) => {
+  const handleWheel = useCallback((e) => {
     e.preventDefault();
     const newZoom = Math.max(0.5, Math.min(3, zoomLevel - e.deltaY * 0.001));
     setZoomLevel(newZoom);
-  };
+  }, [zoomLevel]);
 
   const handleMouseDown = (e) => {
     if (e.button === 0) {
@@ -64,11 +56,11 @@ const RatingGraph = ({ stats }) => {
     }
   };
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = useCallback((e) => {
     if (isDragging) {
       setPan({ x: e.clientX - startPan.x, y: e.clientY - startPan.y });
     }
-  };
+  }, [isDragging, startPan.x, startPan.y]);
 
   const handleMouseUp = () => setIsDragging(false);
 
@@ -84,7 +76,15 @@ const RatingGraph = ({ stats }) => {
         window.removeEventListener('mousemove', handleMouseMove);
       };
     }
-  }, [isDragging, startPan]);
+  }, [isDragging, startPan, handleMouseMove, handleWheel]);
+
+  if (!contestHistory.length) {
+    return (
+      <motion.div className="rounded-xl border border-[var(--border-muted)] bg-[var(--surface)] p-6 text-center shadow-lg backdrop-blur-sm">
+        <p className="text-[var(--text-muted)]">No contest history found</p>
+      </motion.div>
+    );
+  }
 
   const createLinePath = () => {
     const pointWidth = graphWidth / (contestHistory.length - 1);
@@ -113,17 +113,17 @@ const RatingGraph = ({ stats }) => {
   }
 
   return (
-    <div className="bg-gradient-to-br from-gray-800 to-gray-900 p-6 rounded-2xl shadow-xl">
+    <div className="rounded-2xl border border-[var(--border-muted)] bg-[var(--surface)] p-6 shadow-xl">
       <div className="mb-4">
-        <h2 className="text-3xl font-semibold text-white">{currentRating}</h2>
-        <p className="text-gray-400 text-sm">
+        <h2 className="text-3xl font-semibold text-[var(--text-primary)]">{currentRating}</h2>
+        <p className="text-sm text-[var(--text-muted)]">
           {contestHistory.at(-1)?.date} | {contestHistory.at(-1)?.contest?.title} | Rank: {contestHistory.at(-1)?.ranking}
         </p>
       </div>
 
       <div
         ref={containerRef}
-        className="relative h-80 w-full overflow-hidden rounded-md border border-gray-700"
+        className="relative h-80 w-full overflow-hidden rounded-md border border-[var(--border-muted)] bg-[var(--surface-strong)]"
         onMouseDown={handleMouseDown}
         style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
       >
@@ -140,21 +140,21 @@ const RatingGraph = ({ stats }) => {
         >
           <defs>
             <linearGradient id="ratingGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.9" />
-              <stop offset="100%" stopColor="#fbbf24" stopOpacity="0.2" />
+              <stop offset="0%" stopColor="color-mix(in srgb, var(--brand-color) 88%, #facc15)" stopOpacity="0.78" />
+              <stop offset="100%" stopColor="color-mix(in srgb, var(--brand-color) 88%, #facc15)" stopOpacity="0.12" />
             </linearGradient>
           </defs>
 
           {yTicks.map((tick, i) => (
             <g key={i} transform={`translate(0, ${padding.top + tick.y})`}>
-              <line x1="0" y1="0" x2={graphWidth} y2="0" stroke="#374151" strokeDasharray="4" />
-              <text x="-5" y="3" textAnchor="end" fill="#9CA3AF" fontSize="10">{tick.rating}</text>
+              <line x1="0" y1="0" x2={graphWidth} y2="0" stroke="var(--border-muted)" strokeDasharray="4" />
+              <text x="-5" y="3" textAnchor="end" fill="var(--text-muted)" fontSize="10">{tick.rating}</text>
             </g>
           ))}
 
           <g transform={`translate(0, ${padding.top})`}>
             <path d={createAreaPath()} fill="url(#ratingGradient)" />
-            <path d={createLinePath()} fill="none" stroke="#fbbf24" strokeWidth="3" strokeLinecap="round" />
+            <path d={createLinePath()} fill="none" stroke="var(--brand-color)" strokeWidth="3" strokeLinecap="round" />
 
             {contestHistory.map((c, i) => {
               const pointWidth = graphWidth / (contestHistory.length - 1);
@@ -166,8 +166,8 @@ const RatingGraph = ({ stats }) => {
                   cx={x}
                   cy={y}
                   r={selectedPoint === c ? 6 : 4}
-                  fill={selectedPoint === c ? "#ffffff" : "#fbbf24"}
-                  stroke="#fff"
+                  fill={selectedPoint === c ? "var(--surface-strong)" : "var(--brand-color)"}
+                  stroke="var(--text-primary)"
                   strokeWidth="1"
                   onClick={(e) => handlePointClick(c, i, e)}
                   onTouchStart={(e) => handleTouch(c, i, e)}
@@ -180,7 +180,7 @@ const RatingGraph = ({ stats }) => {
 
         {selectedPoint && (
           <div
-            className="absolute bg-black/80 backdrop-blur-sm text-white p-3 rounded-lg text-xs z-50 shadow-md"
+            className="absolute z-50 rounded-lg border border-[var(--border-muted)] bg-[var(--surface-strong)] p-3 text-xs text-[var(--text-primary)] shadow-md backdrop-blur-sm"
             style={{ left: tooltipPosition.x, top: tooltipPosition.y - 80, pointerEvents: 'none' }}
           >
             <p className="font-semibold">{selectedPoint.contest?.title}</p>
@@ -193,16 +193,16 @@ const RatingGraph = ({ stats }) => {
 
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
         <div>
-          <p className="text-gray-400 text-sm">Best Rating</p>
-          <p className="text-white text-xl font-bold">{Math.max(...contestHistory.map(c => c.rating))}</p>
+          <p className="text-sm text-[var(--text-muted)]">Best Rating</p>
+          <p className="text-xl font-bold text-[var(--text-primary)]">{Math.max(...contestHistory.map(c => c.rating))}</p>
         </div>
         <div>
-          <p className="text-gray-400 text-sm">Best Rank</p>
-          <p className="text-white text-xl font-bold">{Math.min(...contestHistory.map(c => c.ranking))}</p>
+          <p className="text-sm text-[var(--text-muted)]">Best Rank</p>
+          <p className="text-xl font-bold text-[var(--text-primary)]">{Math.min(...contestHistory.map(c => c.ranking))}</p>
         </div>
         <div>
-          <p className="text-gray-400 text-sm">Contests</p>
-          <p className="text-white text-xl font-bold">{contestHistory.length}</p>
+          <p className="text-sm text-[var(--text-muted)]">Contests</p>
+          <p className="text-xl font-bold text-[var(--text-primary)]">{contestHistory.length}</p>
         </div>
       </div>
     </div>

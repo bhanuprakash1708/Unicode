@@ -56,9 +56,31 @@ const getCodeforcesContests = async () => {
   }
 };
 
+const getCodeforcesAllContests = async () => {
+  try {
+    const response = await axios.get(
+      "https://codeforces.com/api/contest.list?gym=false"
+    );
+
+    return response.data.result
+      .filter((contest) => Number.isFinite(contest.startTimeSeconds) && Number.isFinite(contest.durationSeconds))
+      .map((contest) => ({
+        name: contest.name,
+        platform: "Codeforces",
+        startTime: contest.startTimeSeconds * 1000,
+        endTime: (contest.startTimeSeconds + contest.durationSeconds) * 1000,
+        url: `https://codeforces.com/contests/${contest.id}`,
+      }));
+  } catch (error) {
+    console.error("Codeforces API Error:", error.message);
+    throw new Error("Failed to fetch Codeforces contests");
+  }
+};
+
 module.exports = {
   getUserInfo,
   getUserRating,
   getUserSubmissions,
   getCodeforcesContests,
+  getCodeforcesAllContests,
 };

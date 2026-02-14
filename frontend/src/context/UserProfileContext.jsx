@@ -9,7 +9,7 @@ const UserProfileContext = createContext({
 });
 
 export const UserProfileProvider = ({ children }) => {
-  const { session, user } = UserAuth();
+  const { session } = UserAuth();
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -42,7 +42,7 @@ export const UserProfileProvider = ({ children }) => {
     };
 
     fetchProfile();
-  }, [session]);
+  }, [API_BASE, session]);
 
   return (
     <UserProfileContext.Provider value={{ profileData, setProfileData, loading, error }}>

@@ -1,6 +1,5 @@
 // Updated Activity Heatmap Component
 import { motion } from 'framer-motion';
-import { useState } from 'react';
 import { Tooltip } from 'react-tooltip';
 
 const ActivityHeatmap = () => {
@@ -21,8 +20,6 @@ const ActivityHeatmap = () => {
   };
 
   const heatmapData = generateHeatmapData();
-  const [selectedDay, setSelectedDay] = useState(null);
-
   // Get weekdays for proper alignment
   const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   
@@ -71,8 +68,6 @@ const ActivityHeatmap = () => {
             data-tooltip-id="heatmap-tooltip"
             data-tooltip-content={`${day.count} problems on ${day.date.toLocaleDateString()}`}
             className={`w-4 h-4 rounded-sm ${getColor(day.count)} hover:scale-125 transition-transform cursor-pointer`}
-            onMouseEnter={() => setSelectedDay(day)}
-            onMouseLeave={() => setSelectedDay(null)}
           />
         ))}
       </div>

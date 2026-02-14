@@ -1,83 +1,84 @@
-import { format, formatDistanceToNow } from 'date-fns';
-import { motion } from 'framer-motion';
-import GoogleCalendarButton from './GoogleCalendarButton';
+import { format, formatDistanceToNow } from "date-fns";
+import GoogleCalendarButton from "./GoogleCalendarButton";
 
 const platformColors = {
-  leetcode: 'bg-orange-500/20 text-orange-300',
-  codeforces: 'bg-blue-500/20 text-blue-300',
-  codechef: 'bg-yellow-500/20 text-yellow-300',
-  gfg: 'bg-green-500/20 text-green-300',
+  leetcode: "border-orange-500/35 bg-orange-500/10 text-orange-600",
+  codeforces: "border-blue-500/35 bg-blue-500/10 text-blue-600",
+  codechef: "border-yellow-500/35 bg-yellow-500/10 text-yellow-700",
 };
 
-const platformGradients = {
-  leetcode: 'from-orange-500/30 to-orange-600/20',
-  codeforces: 'from-blue-500/30 to-blue-600/20',
-  codechef: 'from-yellow-500/30 to-yellow-600/20',
-  gfg: 'from-green-500/30 to-green-600/20',
+const statusStyles = {
+  upcoming: "border-sky-500/35 bg-sky-500/10 text-sky-600",
+  ongoing: "border-amber-500/35 bg-amber-500/10 text-amber-700",
+  completed: "border-emerald-500/35 bg-emerald-500/10 text-emerald-700",
+};
+
+const getStatus = (contest) => {
+  if (contest.status) return contest.status;
+  const now = Date.now();
+  if (now < contest.startTime) return "upcoming";
+  if (now <= contest.endTime) return "ongoing";
+  return "completed";
 };
 
 const ContestCard = ({ contest }) => {
   const startDate = new Date(contest.startTime);
   const endDate = new Date(contest.endTime);
-  
+  const status = getStatus(contest);
+
   return (
-    <motion.div
-      className={`bg-gradient-to-br ${platformGradients[contest.platform]} rounded-xl backdrop-blur-sm border border-white/10 overflow-hidden shadow-lg hover:shadow-xl transition-all`}
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
-      whileHover={{ y: -5 }}
+    <article
+      className="rounded-2xl border border-[var(--border-muted)] bg-[var(--surface-strong)] p-5 shadow-lg transition hover:border-[var(--ring)]/40"
+      aria-label={`${contest.title} contest card`}
     >
-      <div className="p-5">
-        <div className="flex justify-between items-start">
-          <div>
-            <div className="flex items-center space-x-3">
-              <span className={`text-xs px-2 py-1 rounded-full ${platformColors[contest.platform]} backdrop-blur-sm`}>
-                {contest.platform}
-              </span>
-              <h3 className="text-lg font-semibold text-white">{contest.title}</h3>
-            </div>
-            <div className="mt-2 text-sm text-gray-300">
-              <span className="flex items-center space-x-1">
-                <svg className="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>{format(startDate, 'MMM d, yyyy h:mm a')}</span>
-              </span>
-              <span className="flex items-center space-x-1 mt-1">
-                <svg className="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-                <span>{contest.duration} minutes</span>
-              </span>
-            </div>
-          </div>
-          <div className="flex flex-col items-end">
-            <span className="text-xs text-gray-400">
-              {formatDistanceToNow(startDate, { addSuffix: true })}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <span
+              className={`rounded-full border px-2.5 py-1 text-xs font-medium uppercase tracking-wide ${
+                platformColors[contest.platform] || "border-[var(--border-muted)] bg-[var(--surface-muted)] text-[var(--text-primary)]"
+              }`}
+            >
+              {contest.platform}
             </span>
-            
+            <span
+              className={`rounded-full border px-2.5 py-1 text-xs font-medium uppercase tracking-wide ${
+                statusStyles[status] || "border-[var(--border-muted)] bg-[var(--surface-muted)] text-[var(--text-primary)]"
+              }`}
+            >
+              {status}
+            </span>
           </div>
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">{contest.title}</h3>
+          <p className="mt-2 text-sm text-[var(--text-muted)]">
+            Starts {format(startDate, "MMM d, yyyy h:mm a")} and ends{" "}
+            {format(endDate, "MMM d, yyyy h:mm a")}
+          </p>
+          <p className="mt-1 text-sm text-[var(--text-muted)]">
+            Duration: {contest.durationMinutes || 0} minutes
+          </p>
         </div>
-        <GoogleCalendarButton contest={contest} />
-        <div className="mt-4 flex justify-end">
-          <motion.a 
-            href={contest.url} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-purple-300 hover:text-white text-sm font-medium flex items-center"
-            whileHover={{ x: 3 }}
-          >
-            Visit Contest
-            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-          </motion.a>
+
+        <div className="text-sm text-[var(--text-muted)] sm:text-right">
+          <p>{formatDistanceToNow(startDate, { addSuffix: true })}</p>
+          {status === "completed" && <p className="text-emerald-600">Ended</p>}
+          {status === "ongoing" && <p className="text-amber-600">Live now</p>}
         </div>
       </div>
-    </motion.div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <GoogleCalendarButton contest={contest} />
+        <a
+          href={contest.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--brand-color)] transition hover:opacity-80"
+        >
+          Open contest
+          <span aria-hidden="true">{"->"}</span>
+        </a>
+      </div>
+    </article>
   );
 };
 

@@ -41,7 +41,7 @@ const CombinedHeatmap = ({ profileData }) => {
     };
 
     fetchHeatmap();
-  }, [profileData?.leetcode_username, profileData?.codeforces_username, profileData?.codechef_username]);
+  }, [API_BASE, profileData]);
 
   const getCount = (day) => {
     if (selectedPlatform === 'all') {
@@ -87,30 +87,30 @@ const CombinedHeatmap = ({ profileData }) => {
 
   if (loading) {
     return (
-      <div className="bg-black/15 backdrop-blur-m rounded-lg p-6 flex flex-col items-center justify-center">
+      <div className="rounded-lg border border-[var(--border-muted)] bg-[var(--surface)] p-6 text-[var(--text-primary)] shadow-sm">
         <ActivityIcon className="w-12 h-12 text-gray-400 animate-pulse mb-4" />
-        <p className="text-gray-600 font-medium">Loading coding activity...</p>
+        <p className="font-medium text-[var(--text-muted)]">Loading coding activity...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-black/15 backdrop-blur-m rounded-lg p-6 text-center">
+      <div className="rounded-lg border border-[var(--border-muted)] bg-[var(--surface)] p-6 text-center shadow-sm">
         <CodeIcon className="w-12 h-12 text-red-500 mx-auto mb-4" />
         <p className="text-red-600 font-semibold">{error}</p>
-        <p className="text-gray-500 text-sm mt-2">Check your connections or usernames</p>
+        <p className="mt-2 text-sm text-[var(--text-muted)]">Check your connections or usernames</p>
       </div>
     );
   }
 
   return (
-    <div className="text-white mt-2 rounded-2xl p-6 bg-gradient-to-br from-gray-900/80 to-gray-800/60 border border-white/10 shadow-lg backdrop-blur-sm">
+    <div className="mt-2 rounded-2xl border border-[var(--border-muted)] bg-[var(--surface)] p-6 text-[var(--text-primary)] shadow-lg backdrop-blur-sm">
       <div className="flex justify-between items-center mb-2 ">
         <div className="text-sm">
           <span className="text-xl font-semibold">{totalSubmissions}</span> submissions in the past year
         </div>
-        <div className="text-xs text-gray-400 space-x-4">
+        <div className="space-x-4 text-xs text-[var(--text-muted)]">
           <span>Active days: {activeDays}</span>
           <span>Max streak: {getMaxStreak()}</span>
         </div>

@@ -1,220 +1,238 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useMemo } from 'react';
-import { CalendarIcon, ChartPieIcon, ClockIcon, FireIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import ContestCard from '../components/ContestCard';
-import PlatformFilter from '../components/PlatformFilter';
-import Header from '../components/Header';
-import ContestCalendar from '../components/ContestCalendar';
+import { useEffect, useMemo, useState } from "react";
+import { ChartPieIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import ContestCard from "../components/ContestCard";
+import PlatformFilter from "../components/PlatformFilter";
+import Header from "../components/Header";
+import ContestCalendar from "../components/ContestCalendar";
+
+const statusTabs = [
+  { id: "all", label: "All" },
+  { id: "upcoming", label: "Upcoming" },
+  { id: "ongoing", label: "Ongoing" },
+  { id: "completed", label: "Completed" },
+];
+
+const getContestStatus = (startTime, endTime) => {
+  const now = Date.now();
+  if (now < startTime) return "upcoming";
+  if (now <= endTime) return "ongoing";
+  return "completed";
+};
+
+const parseDurationToMinutes = (durationText) => {
+  if (!durationText || typeof durationText !== "string") return 0;
+  const [time, unit] = durationText.trim().split(" ");
+  const timeValue = Number.parseFloat(time);
+  if (!Number.isFinite(timeValue)) return 0;
+  return unit?.toLowerCase().includes("hour")
+    ? Math.round(timeValue * 60)
+    : Math.round(timeValue);
+};
 
 const Contest = () => {
   const [contests, setContests] = useState([]);
-  const [selectedPlatform, setSelectedPlatform] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedPlatform, setSelectedPlatform] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const [hoveredStat, setHoveredStat] = useState(null);
-
-  const parseDuration = (duration) => {
-    const [time, unit] = duration.split(' ');
-    const timeValue = parseFloat(time);
-    return unit.includes('hour') ? Math.round(timeValue * 60) : timeValue;
-  };
+  const [error, setError] = useState("");
   const API_BASE = import.meta.env.VITE_BACKEND_URL;
 
   useEffect(() => {
     const fetchContests = async () => {
+      setLoading(true);
+      setError("");
       try {
-        const response = await fetch(`${API_BASE}/api/contests/upcoming`);
-        const data = await response.json();
-        if (data.success) {
-          const transformedContests = data.contests.map(contest => ({
-            id: `${contest.name}-${contest.startTime}`,
-            title: contest.name,
-            platform: contest.platform.toLowerCase(),
-            startTime: contest.startTime,
-            endTime: contest.endTime,
-            duration: parseDuration(contest.duration),
-            url: contest.url,
-          }));
-          setContests(transformedContests);
+        let data;
+        const allResponse = await fetch(`${API_BASE}/api/contests/all`);
+        if (allResponse.ok) {
+          data = await allResponse.json();
+        } else {
+          const fallbackResponse = await fetch(`${API_BASE}/api/contests/upcoming`);
+          data = await fallbackResponse.json();
         }
-      } catch (error) {
-        console.error('Error fetching contests:', error);
+
+        if (data?.success) {
+          const transformedContests = data.contests.map((contest) => {
+            const startTime = Number(contest.startTime);
+            const endTime = Number(contest.endTime);
+            const durationMinutes = Number.isFinite(contest.durationMinutes)
+              ? contest.durationMinutes
+              : parseDurationToMinutes(contest.duration);
+
+            return {
+              id: `${contest.platform}-${contest.name}-${startTime}`,
+              title: contest.name,
+              platform: (contest.platform || "unknown").toLowerCase(),
+              startTime,
+              endTime,
+              durationMinutes,
+              url: contest.url,
+              status: contest.status || getContestStatus(startTime, endTime),
+            };
+          }).filter((contest) => Number.isFinite(contest.startTime) && Number.isFinite(contest.endTime));
+          setContests(transformedContests);
+        } else {
+          throw new Error("Unable to fetch contests");
+        }
+      } catch (fetchError) {
+        console.error("Error fetching contests:", fetchError);
+        setError("Could not load contests. Please try again.");
       } finally {
         setLoading(false);
       }
     };
 
     fetchContests();
-  }, []);
+  }, [API_BASE]);
 
-  const filteredContests = contests.filter(contest => {
-    const matchesPlatform = selectedPlatform === 'all' || contest.platform === selectedPlatform;
-    const matchesSearch = contest.title.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesPlatform && matchesSearch;
-  });
+  const stats = useMemo(
+    () => ({
+      total: contests.length,
+      upcoming: contests.filter((contest) => contest.status === "upcoming").length,
+      ongoing: contests.filter((contest) => contest.status === "ongoing").length,
+      completed: contests.filter((contest) => contest.status === "completed").length,
+    }),
+    [contests]
+  );
 
-  const PlatformTooltip = ({ visible, contests }) => {
-    const platformCounts = useMemo(() => ({
-      leetcode: contests.filter(c => c.platform === 'leetcode').length,
-      codechef: contests.filter(c => c.platform === 'codechef').length,
-      codeforces: contests.filter(c => c.platform === 'codeforces').length,
-    }), [contests]);
+  const filteredContests = useMemo(
+    () =>
+      contests.filter((contest) => {
+        const matchesPlatform =
+          selectedPlatform === "all" || contest.platform === selectedPlatform;
+        const matchesStatus = selectedStatus === "all" || contest.status === selectedStatus;
+        const matchesSearch = contest.title
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase());
+        return matchesPlatform && matchesStatus && matchesSearch;
+      }),
+    [contests, selectedPlatform, selectedStatus, searchQuery]
+  );
 
-    return (
-      <AnimatePresence>
-        {visible && (
-          <motion.div
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 5 }}
-            className="absolute bottom-full right-0 bg-gray-800/90 backdrop-blur-sm p-2 rounded-lg shadow-lg z-10 min-w-[120px]"
-          >
-            <div className="text-xs space-y-1">
-              {Object.entries(platformCounts).map(([platform, count]) => (
-                count > 0 && (
-                  <div key={platform} className="flex justify-between items-center gap-4">
-                    <span className="capitalize">{platform}</span>
-                    <span className="font-medium">
-                      {count}
-                    </span>
-                  </div>
-                )
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    );
-  };
+  const completedContests = useMemo(
+    () =>
+      filteredContests
+        .filter((contest) => contest.status === "completed")
+        .sort((a, b) => b.endTime - a.endTime),
+    [filteredContests]
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white">
+    <div className="min-h-screen bg-app text-[var(--text-primary)]">
       <Header />
-      <main className="container mx-auto px-4 py-8">
-        <div className="mt-6 mb-8 px-4">
-          <h1 className="text-2xl font-semibold border-b pb-2">
-            🗓️ Upcoming Contests
-          </h1>
-        </div>
+      <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <section className="mb-8 rounded-3xl border border-[var(--border-muted)] bg-[var(--surface)] p-6 shadow-xl backdrop-blur-sm">
+          <h1 className="text-3xl font-semibold tracking-tight">Contests</h1>
+          <p className="mt-2 text-sm text-[var(--text-muted)]">
+            Unified timeline for past, ongoing, and upcoming contests across platforms.
+          </p>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <PlatformFilter selectedPlatform={selectedPlatform} setSelectedPlatform={setSelectedPlatform} />
-            <input
-              type="text"
-              placeholder="🔍 Search contests"
-              className="px-3 py-2 rounded-xl w-[53%] bg-white/10 text-white placeholder-gray-300 outline-none border border-white/20"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+          <div className="mt-6 flex flex-wrap gap-3">
+            {statusTabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setSelectedStatus(tab.id)}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] ${
+                  selectedStatus === tab.id
+                    ? "bg-[var(--brand-color)] text-white"
+                    : "border border-[var(--border-muted)] bg-[var(--surface-strong)] text-[var(--text-primary)] hover:bg-[var(--surface-muted)]"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <section className="space-y-6 lg:col-span-2">
+            <PlatformFilter
+              selectedPlatform={selectedPlatform}
+              setSelectedPlatform={setSelectedPlatform}
             />
+            <label className="relative block">
+              <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--text-muted)]" />
+              <input
+                type="search"
+                placeholder="Search contests"
+                className="w-full rounded-xl border border-[var(--border-muted)] bg-[var(--surface-strong)] py-3 pl-10 pr-4 text-[var(--text-primary)] outline-none transition focus:border-[var(--ring)] focus:ring-2 focus:ring-[var(--ring)]/40"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                aria-label="Search contests"
+              />
+            </label>
 
-            <div className="bg-black/30 backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-xl max-h-[39rem] overflow-y-auto space-y-4 scrollbar-thin">
+            <div className="max-h-[42rem] space-y-4 overflow-y-auto rounded-2xl border border-[var(--border-muted)] bg-[var(--surface)] p-4 shadow-lg scrollbar-thin">
               {loading ? (
-                [...Array(3)].map((_, i) => (
-                  <motion.div
-                    key={i}
-                    className="h-24 bg-white/5 rounded-xl backdrop-blur-sm animate-pulse"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: i * 0.1 }}
-                  />
+                [...Array(4)].map((_, index) => (
+                  <div key={index} className="h-28 animate-pulse rounded-2xl bg-[var(--surface-muted)]" />
                 ))
+              ) : error ? (
+                <p className="rounded-xl border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-200">
+                  {error}
+                </p>
+              ) : filteredContests.length > 0 ? (
+                <>
+                  {filteredContests.map((contest) => (
+                    <ContestCard key={contest.id} contest={contest} />
+                  ))}
+                </>
               ) : (
-                <AnimatePresence>
-                  {filteredContests.length > 0 ? (
-                    filteredContests.map((contest) => (
-                      <ContestCard key={contest.id} contest={contest} />
-                    ))
-                  ) : (
-                    <motion.div
-                      className="text-center py-12 bg-white/5 rounded-xl backdrop-blur-sm border border-white/10"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      <p className="text-gray-400">No contests found matching your criteria</p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                <p className="rounded-xl border border-[var(--border-muted)] bg-[var(--surface-strong)] p-4 text-sm text-[var(--text-muted)]">
+                  No contests match your current filters.
+                </p>
               )}
             </div>
-          </div>
+          </section>
 
-          <div className="space-y-6">
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="mt-14 bg-black/30 backdrop-blur-md p-6 rounded-2xl border border-white/10 shadow-xl space-y-4 py-6"
-            >
-              <h2 className="text-xl font-semibold flex items-center gap-2">
-                <ChartPieIcon className="w-6 h-6 text-purple-400" />
+          <aside className="space-y-6">
+            <div className="rounded-2xl border border-[var(--border-muted)] bg-[var(--surface)] p-6 shadow-xl backdrop-blur-sm">
+              <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold">
+                <ChartPieIcon className="h-6 w-6 text-[var(--brand-color)]" />
                 Contest Stats
               </h2>
-
-              <div className="space-y-3">
-                <div className="flex justify-between items-center relative">
-                  <span className="text-gray-400">Total Contests</span>
-                  <div 
-                    className="font-medium relative group"
-                    onMouseEnter={() => setHoveredStat('total')}
-                    onMouseLeave={() => setHoveredStat(null)}
-                  >
-                    {contests.length}
-                    <PlatformTooltip 
-                      visible={hoveredStat === 'total'}
-                      contests={contests}
-                    />
-                  </div>
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-[var(--text-muted)]">Total</span>
+                  <span className="font-semibold">{stats.total}</span>
                 </div>
-
-                <div className="flex justify-between items-center relative">
-                  <span className="text-gray-400">Upcoming</span>
-                  <div 
-                    className="text-green-400 relative group"
-                    onMouseEnter={() => setHoveredStat('upcoming')}
-                    onMouseLeave={() => setHoveredStat(null)}
-                  >
-                    {contests.filter(c => new Date(c.startTime) > new Date()).length}
-                    <PlatformTooltip 
-                      visible={hoveredStat === 'upcoming'}
-                      contests={contests.filter(c => new Date(c.startTime) > new Date())}
-                    />
-                  </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[var(--text-muted)]">Upcoming</span>
+                  <span className="font-semibold text-sky-500">{stats.upcoming}</span>
                 </div>
-
-                <div className="flex justify-between  items-center relative">
-                  <span className="text-gray-400">Ongoing</span>
-                  <div 
-                    className="text-yellow-400 relative group"
-                    onMouseEnter={() => setHoveredStat('ongoing')}
-                    onMouseLeave={() => setHoveredStat(null)}
-                  >
-                    {contests.filter(c => 
-                      new Date() > new Date(c.startTime) &&
-                      new Date() < new Date(c.endTime)
-                    ).length}
-                    <PlatformTooltip 
-                      visible={hoveredStat === 'ongoing'}
-                      contests={contests.filter(c => 
-                        new Date() > new Date(c.startTime) &&
-                        new Date() < new Date(c.endTime)
-                      )}
-                    />
-                  </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[var(--text-muted)]">Ongoing</span>
+                  <span className="font-semibold text-amber-500">{stats.ongoing}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[var(--text-muted)]">Completed</span>
+                  <span className="font-semibold text-emerald-500">{stats.completed}</span>
                 </div>
               </div>
-            </motion.div>
+            </div>
 
             <ContestCalendar contests={filteredContests} />
-          </div>
+          </aside>
         </div>
 
-        <div className="mt-6 mb-4 px-4">
-          <h1 className="text-2xl font-semibold border-b pb-2">
-            🏁 Previous Contests
-          </h1>
-          <p  > under progress..</p>
-        </div>
+        <section className="mt-10">
+          <h2 className="mb-4 text-2xl font-semibold tracking-tight">Previous Contests</h2>
+          {loading ? (
+            <div className="h-24 animate-pulse rounded-xl bg-[var(--surface-muted)]" />
+          ) : completedContests.length > 0 ? (
+            <div className="space-y-4">
+              {completedContests.slice(0, 10).map((contest) => (
+                <ContestCard key={`completed-${contest.id}`} contest={contest} />
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-xl border border-[var(--border-muted)] bg-[var(--surface-strong)] p-4 text-sm text-[var(--text-muted)]">
+              No completed contests found for the current filter.
+            </p>
+          )}
+        </section>
       </main>
     </div>
   );

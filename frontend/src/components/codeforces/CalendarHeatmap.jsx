@@ -3,6 +3,7 @@ import { format, eachDayOfInterval, subMonths, startOfMonth } from 'date-fns';
 import { motion } from 'framer-motion';
 
 const CalendarHeatmap = ({ submissionCalendar }) => {
+  const calendar = submissionCalendar ?? {};
   const startDate = subMonths(new Date(), 6);
   const endDate = new Date();
   const allDays = eachDayOfInterval({ start: startDate, end: endDate });
@@ -27,19 +28,26 @@ const CalendarHeatmap = ({ submissionCalendar }) => {
     weeks.push(allDays.slice(i, i + 7));
   }
 
+  const getCellStyle = (count) => {
+    if (count === 0) return { backgroundColor: 'var(--surface-muted)' };
+    if (count < 3) return { backgroundColor: 'color-mix(in srgb, var(--brand-color) 42%, transparent)' };
+    if (count < 5) return { backgroundColor: 'color-mix(in srgb, var(--brand-color) 58%, transparent)' };
+    return { backgroundColor: 'color-mix(in srgb, var(--brand-color) 78%, transparent)' };
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gray-800 rounded-xl shadow-lg border border-gray-700 p-6 relative"
+      className="relative rounded-xl border border-[var(--border-muted)] bg-[var(--surface)] p-6 shadow-lg backdrop-blur-sm"
     >
-      <h3 className="text-xl font-semibold mb-6 text-blue-400">6-Month Activity</h3>
+      <h3 className="mb-6 text-xl font-semibold text-[var(--brand-color)]">6-Month Activity</h3>
       
       <div className="flex gap-1 mb-2 ml-8">
-        {months.map((month, idx) => (
+        {months.map((month) => (
           <div
             key={month.date}
-            className="text-xs text-gray-400 font-medium"
+            className="text-xs font-medium text-[var(--text-muted)]"
             style={{ 
               width: `${(weeks.length / months.length) * 100}%`,
               minWidth: '60px'
@@ -62,24 +70,21 @@ const CalendarHeatmap = ({ submissionCalendar }) => {
             return (
               <div key={weekIndex} className="flex flex-col gap-1 relative">
                 {showMonthLabel && (
-                  <div className="absolute -top-6 left-0 text-xs text-gray-400">
+                  <div className="absolute -top-6 left-0 text-xs text-[var(--text-muted)]">
                     {format(weekStartMonth, 'MMM')}
                   </div>
                 )}
-                {week.map((day, dayIndex) => {
+                {week.map((day) => {
                   const dateString = format(day, 'yyyy-MM-dd');
-                  const count = submissionCalendar[dateString] || 0;
+                  const count = calendar[dateString] || 0;
                   
                   return (
                     <div
                       key={dateString}
                       data-tooltip-id="heatmap-tooltip"
                       data-tooltip-content={`${format(day, 'MMM dd, yyyy')} - ${count} submission${count !== 1 ? 's' : ''}`}
-                      className={`h-4 w-4 rounded-sm transition-all ${
-                        count === 0 ? 'bg-gray-700' : 
-                        count < 3 ? 'bg-blue-400' : 
-                        count < 5 ? 'bg-blue-500' : 'bg-blue-600'
-                      } hover:scale-110 cursor-pointer`}
+                      className="h-4 w-4 cursor-pointer rounded-sm transition-all hover:scale-110"
+                      style={getCellStyle(count)}
                     />
                   );
                 })}
@@ -91,11 +96,16 @@ const CalendarHeatmap = ({ submissionCalendar }) => {
 
       <Tooltip
         id="heatmap-tooltip"
-        className="!bg-gray-800 !text-white !rounded-lg !px-3 !py-2 !text-sm !border !border-gray-700"
+        className="!rounded-lg !px-3 !py-2 !text-sm !shadow-lg"
+        style={{
+          backgroundColor: 'var(--surface-strong)',
+          color: 'var(--text-primary)',
+          border: '1px solid var(--border-muted)'
+        }}
         place="top"
       />
       
-      <div className="absolute left-2 top-16 flex flex-col gap-1 text-xs text-gray-400">
+      <div className="absolute left-2 top-16 flex flex-col gap-1 text-xs text-[var(--text-muted)]">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, i) => (
           <div key={day} className="h-4 flex items-center">
             {i % 2 === 0 && day}

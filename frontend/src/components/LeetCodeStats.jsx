@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import RatingGraph from './RatingGraph';
 import { UserAuth } from '../context/AuthContext';
 
-const LeetcodeStats = ({ username }) => {
+const LeetcodeStats = ({ username, onDataLoaded }) => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,7 +11,58 @@ const LeetcodeStats = ({ username }) => {
   const API_BASE = import.meta.env.VITE_BACKEND_URL ?? '';
   const { session } = UserAuth();
 
-  const fetchStats = async () => {
+  const upsertLeetCodeData = useCallback(async (leetcodeData) => {
+    try {
+      // Database expects INTEGER - round decimal ratings (e.g. 1788.66 -> 1789)
+      const rating = leetcodeData.rating === 'N/A' || leetcodeData.rating == null
+        ? null
+        : Math.round(parseFloat(leetcodeData.rating) || 0);
+
+      const contestRankingData = {
+        leetcode_recent_contest_rating: rating,
+        leetcode_max_contest_rating: rating,
+      };
+
+      const totalQuestionsData = {
+        leetcode_easy: leetcodeData.easySolved ?? 0,
+        leetcode_medium: leetcodeData.mediumSolved ?? 0,
+        leetcode_hard: leetcodeData.hardSolved ?? 0,
+        leetcode_total: leetcodeData.totalSolved ?? 0,
+      };
+
+      const [contestRes, questionsRes] = await Promise.all([
+        fetch(`${API_BASE}/api/dashboard/${session.user.id}/contest-ranking`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify(contestRankingData)
+        }),
+        fetch(`${API_BASE}/api/dashboard/${session.user.id}/total-questions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify(totalQuestionsData)
+        })
+      ]);
+
+      if (!contestRes.ok) {
+        const errBody = await contestRes.json().catch(() => ({}));
+        console.error('Contest ranking upsert failed:', contestRes.status, errBody);
+      }
+      if (!questionsRes.ok) {
+        const errBody = await questionsRes.json().catch(() => ({}));
+        console.error('Total questions upsert failed:', questionsRes.status, errBody);
+      }
+    } catch (err) {
+      console.error('Error upserting LeetCode data:', err);
+    }
+  }, [API_BASE, session]);
+
+  const fetchStats = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -70,6 +121,7 @@ const LeetcodeStats = ({ username }) => {
 
         streak: data.streakCount || 0,
         totalActiveDays: data.calendar?.totalActiveDays || 0,
+        submissionCalendar: data.submissionCalendar || {},
 
         recentSubmissions: data.recentSubmissions?.map(submission => ({
           problemName: submission.title,
@@ -79,6 +131,9 @@ const LeetcodeStats = ({ username }) => {
       };
 
       setStats(formattedStats);
+      if (typeof onDataLoaded === 'function') {
+        onDataLoaded(formattedStats);
+      }
       if (session) {
         await upsertLeetCodeData(formattedStats);
       }
@@ -88,62 +143,11 @@ const LeetcodeStats = ({ username }) => {
       setError(err.message || 'An unknown error occurred');
       setLoading(false);
     }
-  };
-
-  const upsertLeetCodeData = async (leetcodeData) => {
-    try {
-      // Database expects INTEGER - round decimal ratings (e.g. 1788.66 -> 1789)
-      const rating = leetcodeData.rating === 'N/A' || leetcodeData.rating == null
-        ? null
-        : Math.round(parseFloat(leetcodeData.rating) || 0);
-
-      const contestRankingData = {
-        leetcode_recent_contest_rating: rating,
-        leetcode_max_contest_rating: rating,
-      };
-
-      const totalQuestionsData = {
-        leetcode_easy: leetcodeData.easySolved ?? 0,
-        leetcode_medium: leetcodeData.mediumSolved ?? 0,
-        leetcode_hard: leetcodeData.hardSolved ?? 0,
-        leetcode_total: leetcodeData.totalSolved ?? 0,
-      };
-
-      const [contestRes, questionsRes] = await Promise.all([
-        fetch(`${API_BASE}/api/dashboard/${session.user.id}/contest-ranking`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`
-          },
-          body: JSON.stringify(contestRankingData)
-        }),
-        fetch(`${API_BASE}/api/dashboard/${session.user.id}/total-questions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`
-          },
-          body: JSON.stringify(totalQuestionsData)
-        })
-      ]);
-
-      if (!contestRes.ok) {
-        const errBody = await contestRes.json().catch(() => ({}));
-        console.error('Contest ranking upsert failed:', contestRes.status, errBody);
-      }
-      if (!questionsRes.ok) {
-        const errBody = await questionsRes.json().catch(() => ({}));
-        console.error('Total questions upsert failed:', questionsRes.status, errBody);
-      }
-    } catch (err) {
-      console.error('Error upserting LeetCode data:', err);
-    }
-  };
+  }, [API_BASE, onDataLoaded, session, upsertLeetCodeData, username]);
 
   useEffect(() => {
     fetchStats();
-  }, [username]);
+  }, [fetchStats]);
 
   const retryFetch = () => {
     fetchStats();
@@ -151,11 +155,11 @@ const LeetcodeStats = ({ username }) => {
 
   if (loading) {
     return (
-      <div className="bg-gray-800 rounded-xl p-8 shadow-lg text-white">
+      <div className="rounded-xl border border-[var(--border-muted)] bg-[var(--surface-strong)] p-8 shadow-lg text-[var(--text-primary)]">
         <div className="flex items-center justify-center h-64">
           <div className="flex flex-col items-center">
             <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            <p className="mt-4 text-blue-300">Loading LeetCode stats for {username}...</p>
+            <p className="mt-4 text-[var(--text-muted)]">Loading LeetCode stats for {username}...</p>
           </div>
         </div>
       </div>
@@ -165,7 +169,7 @@ const LeetcodeStats = ({ username }) => {
   if (error) {
     return (
       <motion.div
-        className="bg-gray-800 rounded-xl p-8 shadow-lg text-white"
+        className="rounded-xl border border-[var(--border-muted)] bg-[var(--surface-strong)] p-8 shadow-lg text-[var(--text-primary)]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -182,13 +186,13 @@ const LeetcodeStats = ({ username }) => {
 
           <div className="space-y-3">
             <button
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors w-full"
+              className="w-full rounded-lg bg-[var(--brand-color)] px-6 py-2 text-white transition-opacity hover:opacity-90"
               onClick={retryFetch}
             >
               Try Again
             </button>
 
-            <div className="text-sm text-gray-300 mt-4">
+            <div className="mt-4 text-sm text-[var(--text-muted)]">
               <p className="mb-2">Possible solutions:</p>
               <ul className="list-disc list-inside space-y-1">
                 <li>Check if the username "{username}" is correct</li>
@@ -271,7 +275,7 @@ const LeetcodeStats = ({ username }) => {
 
   return (
     <motion.div
-      className="bg-gray-800 rounded-xl p-6 shadow-lg text-white"
+      className="rounded-xl border border-[var(--border-muted)] bg-[var(--surface)] p-6 shadow-lg text-[var(--text-primary)]"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
@@ -282,7 +286,7 @@ const LeetcodeStats = ({ username }) => {
           {stats.realName || stats.username}
         </h3>
         {stats.ranking && (
-          <span className="ml-2 px-2 py-1 text-xs bg-blue-900/50 text-blue-300 rounded-full">
+          <span className="ml-2 rounded-full bg-[var(--brand-soft)] px-2 py-1 text-xs text-[var(--brand-color)]">
             #{stats.ranking}
           </span>
         )}
@@ -294,18 +298,18 @@ const LeetcodeStats = ({ username }) => {
         initial="hidden"
         animate="show"
       >
-        <motion.div variants={itemVariants} className="bg-gray-700/50 p-4 rounded-lg">
-          <h3 className="text-blue-300 text-sm">Ranking</h3>
+        <motion.div variants={itemVariants} className="rounded-lg border border-[var(--border-muted)] bg-[var(--surface-strong)] p-4">
+          <h3 className="text-sm text-[var(--text-muted)]">Ranking</h3>
           <p className="text-3xl font-bold">{stats.ranking || 'N/A'}</p>
         </motion.div>
 
-        <motion.div variants={itemVariants} className="bg-gray-700/50 p-4 rounded-lg">
-          <h3 className="text-blue-300 text-sm">Rating</h3>
+        <motion.div variants={itemVariants} className="rounded-lg border border-[var(--border-muted)] bg-[var(--surface-strong)] p-4">
+          <h3 className="text-sm text-[var(--text-muted)]">Rating</h3>
           <p className="text-3xl font-bold">{stats.rating || 'N/A'}</p>
         </motion.div>
 
-        <motion.div variants={itemVariants} className="bg-gray-700/50 p-4 rounded-lg">
-          <h3 className="text-blue-300 text-sm">Contests Attended</h3>
+        <motion.div variants={itemVariants} className="rounded-lg border border-[var(--border-muted)] bg-[var(--surface-strong)] p-4">
+          <h3 className="text-sm text-[var(--text-muted)]">Contests Attended</h3>
           <p className="text-3xl font-bold">{stats.totalContestsAttended || 0}</p>
         </motion.div>
       </motion.div>
@@ -322,12 +326,12 @@ const LeetcodeStats = ({ username }) => {
           <div className="space-y-4">
             <div>
               <div className="flex justify-between mb-1">
-                <span className="text-sm text-blue-300">Easy</span>
+                <span className="text-sm text-[var(--text-muted)]">Easy</span>
                 <span className="text-sm text-green-400">
                   {stats.easySolved || 0}/{stats.totalEasy || 0}
                 </span>
               </div>
-              <div className="w-full bg-gray-700 rounded-full h-2.5">
+              <div className="h-2.5 w-full rounded-full bg-[var(--surface-muted)]">
                 <motion.div
                   className="bg-green-400 h-2.5 rounded-full"
                   style={{ width: `${stats.easySolved && stats.totalEasy ? (stats.easySolved / stats.totalEasy) * 100 : 0}%` }}
@@ -338,12 +342,12 @@ const LeetcodeStats = ({ username }) => {
 
             <div>
               <div className="flex justify-between mb-1">
-                <span className="text-sm text-blue-300">Medium</span>
+                <span className="text-sm text-[var(--text-muted)]">Medium</span>
                 <span className="text-sm text-yellow-400">
                   {stats.mediumSolved || 0}/{stats.totalMedium || 0}
                 </span>
               </div>
-              <div className="w-full bg-gray-700 rounded-full h-2.5">
+              <div className="h-2.5 w-full rounded-full bg-[var(--surface-muted)]">
                 <motion.div
                   className="bg-yellow-400 h-2.5 rounded-full"
                   style={{ width: `${stats.mediumSolved && stats.totalMedium ? (stats.mediumSolved / stats.totalMedium) * 100 : 0}%` }}
@@ -354,12 +358,12 @@ const LeetcodeStats = ({ username }) => {
 
             <div>
               <div className="flex justify-between mb-1">
-                <span className="text-sm text-blue-300">Hard</span>
+                <span className="text-sm text-[var(--text-muted)]">Hard</span>
                 <span className="text-sm text-red-400">
                   {stats.hardSolved || 0}/{stats.totalHard || 0}
                 </span>
               </div>
-              <div className="w-full bg-gray-700 rounded-full h-2.5">
+              <div className="h-2.5 w-full rounded-full bg-[var(--surface-muted)]">
                 <motion.div
                   className="bg-red-400 h-2.5 rounded-full"
                   style={{ width: `${stats.hardSolved && stats.totalHard ? (stats.hardSolved / stats.totalHard) * 100 : 0}%` }}
@@ -377,7 +381,7 @@ const LeetcodeStats = ({ username }) => {
               transition={{ duration: 1, delay: 0.5 }}
             >
               <svg viewBox="0 0 100 100" className="w-full h-full">
-                <circle cx="50" cy="50" r="45" fill="none" stroke="#374151" strokeWidth="8" />
+                <circle cx="50" cy="50" r="45" fill="none" stroke="var(--border-muted)" strokeWidth="8" />
                 <motion.circle
                   cx="50"
                   cy="50"
@@ -405,7 +409,7 @@ const LeetcodeStats = ({ username }) => {
                 >
                   {stats.totalSolved || 0}
                 </motion.span>
-                <span className="text-sm text-blue-300">solved</span>
+                <span className="text-sm text-[var(--text-muted)]">solved</span>
               </div>
             </motion.div>
           </div>
@@ -419,9 +423,9 @@ const LeetcodeStats = ({ username }) => {
         initial="hidden"
         animate="show"
       >
-        <motion.div variants={itemVariants} className="bg-gray-700 rounded-xl overflow-hidden shadow-lg border border-gray-600">
+        <motion.div variants={itemVariants} className="overflow-hidden rounded-xl border border-[var(--border-muted)] bg-[var(--surface-strong)] shadow-lg">
           <div
-            className="flex justify-between items-center p-4 bg-gray-800 cursor-pointer"
+            className="flex cursor-pointer items-center justify-between border-b border-[var(--border-muted)] bg-[var(--surface-muted)] p-4"
             onClick={() => setExpandedTopics(!expandedTopics)}
           >
             <h2 className="text-xl font-bold text-blue-400">Topic Analysis</h2>
@@ -445,20 +449,20 @@ const LeetcodeStats = ({ username }) => {
                 exit="closed"
                 className="overflow-hidden"
               >
-                <div className="p-6 bg-gray-800">
+                <div className="bg-[var(--surface-strong)] p-6">
                   {/* Top Topics Overview */}
                   <div className="mb-6">
                     <h3 className="text-blue-300 text-lg mb-3">Top Skills</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {topTopics.slice(0, 4).map((topic, index) => (
-                        <div key={index} className="bg-gray-700 p-3 rounded-lg">
+                        <div key={index} className="rounded-lg border border-[var(--border-muted)] bg-[var(--surface)] p-3">
                           <div className="flex justify-between mb-1">
-                            <span className="text-sm text-blue-300">{topic.tagName}</span>
+                            <span className="text-sm text-[var(--text-muted)]">{topic.tagName}</span>
                             <span className="text-sm text-blue-400">
                               {topic.problemsSolved} solved
                             </span>
                           </div>
-                          <div className="w-full bg-gray-600 rounded-full h-2.5">
+                          <div className="h-2.5 w-full rounded-full bg-[var(--surface-muted)]">
                             <motion.div
                               className="bg-blue-500 h-2.5 rounded-full"
                               style={{ width: `${Math.min(100, (topic.problemsSolved / 100) * 100)}%` }}
@@ -480,14 +484,14 @@ const LeetcodeStats = ({ username }) => {
                         <h3 className="text-green-300 text-lg mb-3">Fundamental Topics</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {topicsByCategory.fundamental.slice(0, 6).map((topic, index) => (
-                            <div key={index} className="bg-gray-700 p-3 rounded-lg">
+                            <div key={index} className="rounded-lg border border-[var(--border-muted)] bg-[var(--surface)] p-3">
                               <div className="flex justify-between mb-1">
                                 <span className="text-sm text-green-300">{topic.tagName}</span>
                                 <span className="text-sm text-green-400">
                                   {topic.problemsSolved} solved
                                 </span>
                               </div>
-                              <div className="w-full bg-gray-600 rounded-full h-2">
+                              <div className="h-2 w-full rounded-full bg-[var(--surface-muted)]">
                                 <motion.div
                                   className="bg-green-500 h-2 rounded-full"
                                   style={{ width: `${Math.min(100, (topic.problemsSolved / 50) * 100)}%` }}
@@ -508,14 +512,14 @@ const LeetcodeStats = ({ username }) => {
                         <h3 className="text-yellow-300 text-lg mb-3">Intermediate Topics</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {topicsByCategory.intermediate.slice(0, 6).map((topic, index) => (
-                            <div key={index} className="bg-gray-700 p-3 rounded-lg">
+                            <div key={index} className="rounded-lg border border-[var(--border-muted)] bg-[var(--surface)] p-3">
                               <div className="flex justify-between mb-1">
                                 <span className="text-sm text-yellow-300">{topic.tagName}</span>
                                 <span className="text-sm text-yellow-400">
                                   {topic.problemsSolved} solved
                                 </span>
                               </div>
-                              <div className="w-full bg-gray-600 rounded-full h-2">
+                              <div className="h-2 w-full rounded-full bg-[var(--surface-muted)]">
                                 <motion.div
                                   className="bg-yellow-500 h-2 rounded-full"
                                   style={{ width: `${Math.min(100, (topic.problemsSolved / 50) * 100)}%` }}
@@ -536,14 +540,14 @@ const LeetcodeStats = ({ username }) => {
                         <h3 className="text-red-300 text-lg mb-3">Advanced Topics</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {topicsByCategory.advanced.slice(0, 6).map((topic, index) => (
-                            <div key={index} className="bg-gray-700 p-3 rounded-lg">
+                            <div key={index} className="rounded-lg border border-[var(--border-muted)] bg-[var(--surface)] p-3">
                               <div className="flex justify-between mb-1">
                                 <span className="text-sm text-red-300">{topic.tagName}</span>
                                 <span className="text-sm text-red-400">
                                   {topic.problemsSolved} solved
                                 </span>
                               </div>
-                              <div className="w-full bg-gray-600 rounded-full h-2">
+                              <div className="h-2 w-full rounded-full bg-[var(--surface-muted)]">
                                 <motion.div
                                   className="bg-red-500 h-2 rounded-full"
                                   style={{ width: `${Math.min(100, (topic.problemsSolved / 50) * 100)}%` }}
@@ -564,8 +568,8 @@ const LeetcodeStats = ({ username }) => {
           </AnimatePresence>
 
           {(!topTopics || topTopics.length === 0) && (
-            <div className="p-6 bg-gray-800 text-center">
-              <p className="text-gray-300">No topic data found</p>
+            <div className="bg-[var(--surface-strong)] p-6 text-center">
+              <p className="text-[var(--text-muted)]">No topic data found</p>
             </div>
           )}
         </motion.div>
@@ -582,15 +586,15 @@ const LeetcodeStats = ({ username }) => {
         {stats.languages && stats.languages.length > 0 ? (
           <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {stats.languages.map((lang, index) => (
-              <div key={index} className="bg-gray-700/50 p-4 rounded-lg">
-                <h3 className="text-blue-300 text-sm">{lang.languageName}</h3>
+              <div key={index} className="rounded-lg border border-[var(--border-muted)] bg-[var(--surface-strong)] p-4">
+                <h3 className="text-sm text-[var(--text-muted)]">{lang.languageName}</h3>
                 <p className="text-xl font-bold">{lang.problemsSolved}</p>
               </div>
             ))}
           </motion.div>
         ) : (
-          <motion.div variants={itemVariants} className="bg-gray-700/50 p-6 rounded-lg text-center">
-            <p className="text-gray-300">No language data found</p>
+          <motion.div variants={itemVariants} className="rounded-lg border border-[var(--border-muted)] bg-[var(--surface-strong)] p-6 text-center">
+            <p className="text-[var(--text-muted)]">No language data found</p>
           </motion.div>
         )}
       </motion.div>
@@ -606,23 +610,23 @@ const LeetcodeStats = ({ username }) => {
       >
         <motion.h2 variants={itemVariants} className="text-xl font-bold mb-4 text-blue-400">Activity Stats</motion.h2>
         <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-gray-700/50 p-4 rounded-lg">
-            <h3 className="text-blue-300 text-sm">Current Streak</h3>
+          <div className="rounded-lg border border-[var(--border-muted)] bg-[var(--surface-strong)] p-4">
+            <h3 className="text-sm text-[var(--text-muted)]">Current Streak</h3>
             <p className="text-xl font-bold">{stats.streak || 0} days</p>
           </div>
 
-          <div className="bg-gray-700/50 p-4 rounded-lg">
-            <h3 className="text-blue-300 text-sm">Total Active Days</h3>
+          <div className="rounded-lg border border-[var(--border-muted)] bg-[var(--surface-strong)] p-4">
+            <h3 className="text-sm text-[var(--text-muted)]">Total Active Days</h3>
             <p className="text-xl font-bold">{stats.totalActiveDays || 0}</p>
           </div>
 
-          <div className="bg-gray-700/50 p-4 rounded-lg">
-            <h3 className="text-blue-300 text-sm">Recent Contest Rating</h3>
+          <div className="rounded-lg border border-[var(--border-muted)] bg-[var(--surface-strong)] p-4">
+            <h3 className="text-sm text-[var(--text-muted)]">Recent Contest Rating</h3>
             <p className="text-xl font-bold">{stats.rating || 'N/A'}</p>
           </div>
 
-          <div className="bg-gray-700/50 p-4 rounded-lg">
-            <h3 className="text-blue-300 text-sm">Global Ranking</h3>
+          <div className="rounded-lg border border-[var(--border-muted)] bg-[var(--surface-strong)] p-4">
+            <h3 className="text-sm text-[var(--text-muted)]">Global Ranking</h3>
             <p className="text-xl font-bold">{stats.ranking || 'N/A'}</p>
           </div>
         </motion.div>
@@ -644,17 +648,17 @@ const LeetcodeStats = ({ username }) => {
 
           <motion.ul
             variants={itemVariants}
-            className="bg-gray-700 rounded-xl divide-y divide-gray-600 overflow-hidden shadow-lg"
+            className="overflow-hidden rounded-xl border border-[var(--border-muted)] bg-[var(--surface-strong)] shadow-lg"
           >
             {stats.recentSubmissions.slice(0, 5).map((submission, index) => (
               <motion.li
                 key={index}
-                className="p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2"
+                className="flex flex-col gap-2 border-b border-[var(--border-muted)] p-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
                 initial={{ x: -20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.1 * index }}
               >
-                <div className="text-white">
+                <div className="text-[var(--text-primary)]">
                   <p className="font-medium text-base">{submission.problemName}</p>
                 </div>
                 <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400 border border-green-400/40">

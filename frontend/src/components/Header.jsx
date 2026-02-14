@@ -1,217 +1,225 @@
-import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useLocation } from 'react-router-dom';
-import { useState, useEffect, useRef } from 'react';
-import { useUserProfile } from '../context/UserProfileContext';
+import { Moon, Sun } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { UserAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
+import { useUserProfile } from "../context/UserProfileContext";
 
-const Headers = () => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isHoveringDropdown, setIsHoveringDropdown] = useState(false);
-  const dropdownRef = useRef(null);
+const Header = () => {
+  const [profilesOpen, setProfilesOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const profilesRef = useRef(null);
+  const userMenuRef = useRef(null);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut } = UserAuth();
   const { profileData } = useUserProfile();
+  const { resolvedTheme, toggleTheme } = useTheme();
 
-  const getUserInitial = () => {
-    if (!profileData || !profileData.name) {
-      return '👤';
-    }
+  const userInitial = useMemo(() => {
+    if (!profileData?.name) return "U";
     return profileData.name.charAt(0).toUpperCase();
-  };
+  }, [profileData?.name]);
+
+  const platforms = [
+    { id: "leetcode", name: "LeetCode", connected: !!profileData?.leetcode_username },
+    { id: "codeforces", name: "Codeforces", connected: !!profileData?.codeforces_username },
+    { id: "codechef", name: "CodeChef", connected: !!profileData?.codechef_username },
+  ];
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false);
+    const onClickOutside = (event) => {
+      if (profilesRef.current && !profilesRef.current.contains(event.target)) {
+        setProfilesOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setUserMenuOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside);
+    document.addEventListener("mousedown", onClickOutside);
+    document.addEventListener("touchstart", onClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("touchstart", onClickOutside);
     };
   }, []);
 
+  useEffect(() => {
+    setProfilesOpen(false);
+    setUserMenuOpen(false);
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setUserMenuOpen(false);
+    }
+  };
+
   const isActive = (path) => location.pathname === path;
 
-  // Platform data with connection status
-  const platforms = [
-    { 
-      id: 'leetcode', 
-      name: 'LeetCode', 
-      connected: !!profileData?.leetcode_username,
-      colorConnected: 'bg-green-400',
-      colorDisconnected: 'bg-red-400'
-    },
-    { 
-      id: 'codeforces', 
-      name: 'Codeforces', 
-      connected: !!profileData?.codeforces_username,
-      colorConnected: 'bg-green-400',
-      colorDisconnected: 'bg-red-400'
-    },
-    { 
-      id: 'codechef', 
-      name: 'CodeChef', 
-      connected: !!profileData?.codechef_username,
-      colorConnected: 'bg-green-400',
-      colorDisconnected: 'bg-red-400'
-    }
-  ];
-
   return (
-    <header className="bg-gradient-to-r from-slate-800 to-gray-900 backdrop-blur-md border-b border-slate-700 shadow-md relative z-50">
-      <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-        {/* Logo and Title - Now clickable and redirects to dashboard */}
-        <Link to="/dashboard" className="flex items-center space-x-3">
-          <motion.div
-            className="flex items-center space-x-3"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 9l3 3-3 3m5 0h3m-11 4h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300">
-              Unicode
-            </h1>
-          </motion.div>
+    <header className="sticky top-0 z-50 border-b border-[var(--border-muted)] bg-[var(--header-bg)] backdrop-blur-md">
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+        <Link to="/dashboard" className="flex items-center gap-3">
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand-color)]">
+            {"</>"}
+          </span>
+          <div>
+            <p className="text-lg font-semibold tracking-wide text-[var(--text-primary)]">Unicode</p>
+            <p className="text-xs text-[var(--text-muted)]">Competitive Programming Tracker</p>
+          </div>
         </Link>
 
-        {/* Navigation Menu */}
-        <nav className="hidden md:flex space-x-8 relative z-50">
+        <nav className="hidden items-center gap-7 md:flex">
           <Link
             to="/dashboard"
-            className={`relative group font-medium transition-all duration-300 ${isActive('/dashboard') ? 'text-blue-400' : 'text-white hover:text-blue-400'}`}
+            className={`text-sm font-medium transition ${
+              isActive("/dashboard")
+                ? "text-[var(--brand-color)]"
+                : "text-[var(--text-primary)] hover:text-[var(--brand-color)]"
+            }`}
           >
             Dashboard
-            <span className={`absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-400 transition-all duration-300 group-hover:w-full ${isActive('/dashboard') ? 'w-full' : ''}`}></span>
           </Link>
 
-          {/* Coding Profiles Dropdown */}
-          <div 
-            className="relative" 
-            ref={dropdownRef}
-            onMouseEnter={() => {
-              setIsDropdownOpen(true);
-              setIsHoveringDropdown(true);
-            }}
-            onMouseLeave={() => {
-              setIsHoveringDropdown(false);
-              setTimeout(() => {
-                if (!isHoveringDropdown) setIsDropdownOpen(false);
-              }, 300);
-            }}
-          >
+          <div className="relative" ref={profilesRef}>
             <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className={`relative group font-medium transition-all duration-300 flex items-center space-x-1 ${
-                isActive('/leetcode') || isActive('/codeforces') || isActive('/codechef') 
-                  ? 'text-blue-400' 
-                  : 'text-white hover:text-blue-400'
+              type="button"
+              className={`text-sm font-medium transition ${
+                isActive("/leetcode") || isActive("/codeforces") || isActive("/codechef")
+                  ? "text-[var(--brand-color)]"
+                  : "text-[var(--text-primary)] hover:text-[var(--brand-color)]"
               }`}
+              onClick={() => setProfilesOpen((prev) => !prev)}
+              aria-expanded={profilesOpen}
+              aria-haspopup="menu"
             >
-              <span>Coding Profiles</span>
-              <motion.span
-                animate={{ rotate: isDropdownOpen ? 180 : 0 }}
-                transition={{ duration: 0.2 }}
-                className="text-xs"
-              >
-                ▼
-              </motion.span>
-              <span className={`absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-400 transition-all duration-300 group-hover:w-full ${
-                isActive('/leetcode') || isActive('/codeforces') || isActive('/codechef') ? 'w-full' : ''
-              }`}></span>
+              Coding Profiles
             </button>
-
-            <AnimatePresence>
-              {isDropdownOpen && (
-                <motion.div 
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="absolute left-0 mt-3 w-64 bg-gray-800 text-white rounded-xl shadow-2xl z-50 border border-slate-700 overflow-hidden"
-                  onMouseEnter={() => setIsHoveringDropdown(true)}
-                  onMouseLeave={() => {
-                    setIsHoveringDropdown(false);
-                    setIsDropdownOpen(false);
-                  }}
-                >
-                  <div className="p-1">
-                    <div className="px-4 py-2 text-xs font-semibold text-cyan-300 uppercase tracking-wider">
-                      Connected Platforms
-                    </div>
-                    
-                    {platforms.map(platform => (
-                      <Link
-                        key={platform.id}
-                        to={`/${platform.id}`}
-                        className={`flex items-center px-4 py-3 text-sm transition-all duration-200 ${
-                          platform.connected 
-                            ? 'hover:bg-slate-700' 
-                            : 'opacity-80 hover:opacity-100 hover:bg-slate-700/50'
-                        }`}
-                        onClick={() => setIsDropdownOpen(false)}
-                      >
-                        <div className={`w-2 h-2 rounded-full ${
-                          platform.connected ? platform.colorConnected : platform.colorDisconnected
-                        } mr-3`}></div>
-                        <span className="flex-1">{platform.name}</span>
-                        <span className="text-xs text-slate-400">
-                          {platform.connected ? 'Connected' : 'Not Connected'}
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {profilesOpen && (
+              <div className="absolute left-0 mt-3 w-64 rounded-xl border border-[var(--border-muted)] bg-[var(--surface-strong)] p-2 shadow-xl">
+                {platforms.map((platform) => (
+                  <Link
+                    key={platform.id}
+                    to={`/${platform.id}`}
+                    onClick={() => setProfilesOpen(false)}
+                    className="flex items-center justify-between rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] transition hover:bg-[var(--surface-muted)]"
+                  >
+                    <span>{platform.name}</span>
+                    <span className={`text-xs ${platform.connected ? "text-emerald-500" : "text-rose-500"}`}>
+                      {platform.connected ? "Connected" : "Not connected"}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
 
           <Link
             to="/contest"
-            className={`relative group font-medium transition-all duration-300 ${isActive('/contest') ? 'text-blue-400' : 'text-white hover:text-blue-400'}`}
+            className={`text-sm font-medium transition ${
+              isActive("/contest")
+                ? "text-[var(--brand-color)]"
+                : "text-[var(--text-primary)] hover:text-[var(--brand-color)]"
+            }`}
           >
             Contests
-            <span className={`absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-400 transition-all duration-300 group-hover:w-full ${isActive('/contest') ? 'w-full' : ''}`}></span>
           </Link>
         </nav>
 
-        {/* Right Icons */}
-        <motion.div
-          className="flex items-center space-x-5"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <motion.button
-            className="p-2 rounded-full hover:bg-slate-700 transition-all duration-300 shadow-md"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border-muted)] bg-[var(--surface-muted)] text-[var(--text-primary)] transition hover:border-[var(--brand-color)]"
+            aria-label={`Switch to ${resolvedTheme === "dark" ? "light" : "dark"} mode`}
           >
-            <svg className="w-5 h-5 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </svg>
-          </motion.button>
-
-          <motion.div
-            className="relative"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Link 
-              to="/profile" 
-              className="w-9 h-9 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center shadow-lg text-white font-medium"
+            {resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+          <div className="relative" ref={userMenuRef}>
+            <button
+              type="button"
+              onClick={() => setUserMenuOpen((prev) => !prev)}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[var(--brand-color)] text-sm font-semibold text-white"
+              aria-label="Open user menu"
+              aria-haspopup="menu"
+              aria-expanded={userMenuOpen}
             >
-              {getUserInitial()}
-            </Link>
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-gray-900"></span>
-          </motion.div>
-        </motion.div>
+              {userInitial}
+            </button>
+            {userMenuOpen && (
+              <div className="absolute right-0 mt-3 w-44 rounded-xl border border-[var(--border-muted)] bg-[var(--surface-strong)] p-1.5 shadow-xl">
+                <Link
+                  to="/profile"
+                  onClick={() => setUserMenuOpen(false)}
+                  className="block rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] transition hover:bg-[var(--surface-muted)]"
+                >
+                  Edit Profile
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="block w-full rounded-lg px-3 py-2 text-left text-sm text-rose-500 transition hover:bg-[var(--surface-muted)]"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            className="rounded-lg border border-[var(--border-muted)] px-3 py-1.5 text-sm text-[var(--text-primary)] md:hidden"
+            onClick={() => setMobileOpen((prev) => !prev)}
+            aria-expanded={mobileOpen}
+            aria-label="Toggle menu"
+          >
+            Menu
+          </button>
+        </div>
       </div>
+
+      {mobileOpen && (
+        <div className="border-t border-[var(--border-muted)] bg-[var(--surface)] md:hidden">
+          <div className="space-y-1 px-4 py-3">
+            <Link
+              to="/dashboard"
+              onClick={() => setMobileOpen(false)}
+              className="block rounded-lg px-3 py-2 text-[var(--text-primary)] hover:bg-[var(--surface-muted)]"
+            >
+              Dashboard
+            </Link>
+            <Link
+              to="/contest"
+              onClick={() => setMobileOpen(false)}
+              className="block rounded-lg px-3 py-2 text-[var(--text-primary)] hover:bg-[var(--surface-muted)]"
+            >
+              Contests
+            </Link>
+            {platforms.map((platform) => (
+              <Link
+                key={platform.id}
+                to={`/${platform.id}`}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-between rounded-lg px-3 py-2 text-[var(--text-primary)] hover:bg-[var(--surface-muted)]"
+              >
+                <span>{platform.name}</span>
+                <span className={`text-xs ${platform.connected ? "text-emerald-500" : "text-rose-500"}`}>
+                  {platform.connected ? "Connected" : "Not connected"}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </header>
   );
 };
 
-export default Headers;
+export default Header;

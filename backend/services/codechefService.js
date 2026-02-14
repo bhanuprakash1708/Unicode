@@ -44,8 +44,26 @@ async function fetchWithRetry(url, options = {}, maxRetries = 3) {
   throw lastError;
 }
 
+const normalizeContestDurationMs = (startTime, endTime, fallbackDurationSeconds) => {
+  if (Number.isFinite(startTime) && Number.isFinite(endTime) && endTime >= startTime) {
+    return endTime - startTime;
+  }
+  const seconds = Number(fallbackDurationSeconds);
+  if (Number.isFinite(seconds) && seconds > 0) {
+    return seconds * 1000;
+  }
+  return 0;
+};
+
+const normalizeHeatmapDate = (rawDate) => {
+  if (!rawDate) return null;
+  const date = new Date(rawDate);
+  if (Number.isNaN(date.getTime())) return null;
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+};
+
 const codechefService = {
-  
+
   async extractProfileData(username) {
     try {
       const response = await fetchWithRetry(
@@ -128,6 +146,44 @@ const codechefService = {
   },
 
   async extractSubmissionHeatmap(username) {
+    const parseFromProfilePage = async () => {
+      try {
+        const response = await fetchWithRetry(
+          `https://www.codechef.com/users/${username}`
+        );
+        const html = response.data || "";
+
+        const match = html.match(/var\s+userDailySubmissionsStats\s*=\s*(\[[\s\S]*?\]);/);
+        if (!match || !match[1]) {
+          return { activeDays: 0, totalSubmissions: 0, heatmapData: [] };
+        }
+
+        const parsed = JSON.parse(match[1]);
+        if (!Array.isArray(parsed)) {
+          return { activeDays: 0, totalSubmissions: 0, heatmapData: [] };
+        }
+
+        const normalized = parsed
+          .map((entry) => ({
+            date: normalizeHeatmapDate(entry?.date),
+            count: Number.parseInt(entry?.value ?? entry?.count ?? 0, 10) || 0,
+          }))
+          .filter((entry) => Boolean(entry.date));
+
+        const totalSubmissions = normalized.reduce((sum, day) => sum + day.count, 0);
+        const activeDays = normalized.filter((day) => day.count > 0).length;
+
+        return {
+          activeDays,
+          totalSubmissions,
+          heatmapData: normalized,
+        };
+      } catch (error) {
+        console.error("Error parsing CodeChef heatmap from profile page:", error);
+        return { activeDays: 0, totalSubmissions: 0, heatmapData: [] };
+      }
+    };
+
     try {
       const apiUrl = `https://codechef-api.vercel.app/handle/${username}`;
 
@@ -136,10 +192,13 @@ const codechefService = {
       }).catch(() => null);
 
       if (!response?.data || !response.data.success) {
-        return { activeDays: 0, totalSubmissions: 0, heatmapData: [] };
+        return await parseFromProfilePage();
       }
 
       const heatmapData = response.data.heatMap || [];
+      if (!Array.isArray(heatmapData) || heatmapData.length === 0) {
+        return await parseFromProfilePage();
+      }
 
       const activeDays = heatmapData.length;
 
@@ -149,20 +208,26 @@ const codechefService = {
         totalSubmissions += parseInt(day.value || 0);
       });
 
-      const formattedData = heatmapData.map((day) => ({
-        date: day.date,
-        count: parseInt(day.value || 0),
-      }));
+      const formattedData = heatmapData
+        .map((day) => ({
+          date: normalizeHeatmapDate(day?.date),
+          count: parseInt(day?.value || day?.count || 0, 10),
+        }))
+        .filter((day) => Boolean(day.date));
+
+      if (formattedData.length === 0) {
+        return await parseFromProfilePage();
+      }
 
       // Return the formatted data
       return {
-        activeDays,
+        activeDays: formattedData.filter((day) => day.count > 0).length || activeDays,
         totalSubmissions,
         heatmapData: formattedData,
       };
     } catch (error) {
       console.error("Error extracting submission heatmap:", error);
-      return { activeDays: 0, totalSubmissions: 0, heatmapData: [] };
+      return await parseFromProfilePage();
     }
   },
 
@@ -308,11 +373,62 @@ const codechefService = {
           platform: "CodeChef",
           startTime: new Date(contest.contest_start_date).getTime(),
           endTime: new Date(contest.contest_end_date).getTime(),
-          duration: contest.contest_duration / 60 + " hours",
+          duration: `${Math.round(
+            normalizeContestDurationMs(
+              new Date(contest.contest_start_date).getTime(),
+              new Date(contest.contest_end_date).getTime(),
+              contest.contest_duration
+            ) /
+              (1000 * 60)
+          )} minutes`,
           url: `https://www.codechef.com/${contest.contest_code}`,
         }));
 
       return contests;
+    } catch (error) {
+      console.error("CodeChef API Error:", error.message);
+      throw new Error("Failed to fetch CodeChef contests");
+    }
+  },
+
+  async getCodeChefAllContests() {
+    try {
+      const response = await axios.get("https://www.codechef.com/api/list/contests/all", {
+        headers: {
+          Accept: "application/json",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        },
+      });
+
+      const allBuckets = [
+        ...(response.data.future_contests || []),
+        ...(response.data.present_contests || []),
+        ...(response.data.past_contests || []),
+      ];
+
+      return allBuckets
+        .map((contest) => {
+          const startTime = new Date(contest.contest_start_date).getTime();
+          const endTimeRaw = new Date(contest.contest_end_date).getTime();
+          const durationMs = normalizeContestDurationMs(
+            startTime,
+            endTimeRaw,
+            contest.contest_duration
+          );
+          const endTime = Number.isFinite(endTimeRaw) && endTimeRaw >= startTime
+            ? endTimeRaw
+            : startTime + durationMs;
+
+          return {
+            name: contest.contest_name,
+            platform: "CodeChef",
+            startTime,
+            endTime,
+            url: `https://www.codechef.com/${contest.contest_code}`,
+          };
+        })
+        .filter((contest) => Number.isFinite(contest.startTime) && Number.isFinite(contest.endTime));
     } catch (error) {
       console.error("CodeChef API Error:", error.message);
       throw new Error("Failed to fetch CodeChef contests");

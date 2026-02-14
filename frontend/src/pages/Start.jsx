@@ -1,205 +1,151 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowRight, BarChart2, Calendar, TrendingUp, Code, AlertCircle, Github, Link as LinkIcon } from 'lucide-react';
+import { ArrowRight, BarChart3, CalendarClock, Moon, ShieldCheck, Sun, Trophy } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      delayChildren: 0.3,
-      staggerChildren: 0.2
-    }
-  }
-};
+const features = [
+  {
+    title: "Unified Progress Tracking",
+    description: "Connect LeetCode, CodeChef, and Codeforces into one clean dashboard with platform-level insights.",
+    icon: <BarChart3 className="h-5 w-5" />,
+  },
+  {
+    title: "Contest Intelligence",
+    description: "See upcoming, ongoing, and completed contests in one place with accurate status and reminders.",
+    icon: <CalendarClock className="h-5 w-5" />,
+  },
+  {
+    title: "Performance Confidence",
+    description: "Measure rating trends, solved counts, and growth signals with clear visual hierarchy.",
+    icon: <Trophy className="h-5 w-5" />,
+  },
+  {
+    title: "Privacy First",
+    description: "Your profile integrations and analytics stay tied to your account with secure auth flows.",
+    icon: <ShieldCheck className="h-5 w-5" />,
+  },
+];
 
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: {
-      type: "spring",
-      stiffness: 100,
-      damping: 10
-    }
-  }
-};
-
-const featureVariants = {
-  hidden: { scale: 0.9, opacity: 0 },
-  visible: {
-    scale: 1,
-    opacity: 1,
-    transition: {
-      type: "spring",
-      stiffness: 100,
-      damping: 10
-    }
-  }
-};
-
-export default function Home() {
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const features = [
-    {
-      icon: <BarChart2 className="h-6 w-6 text-blue-500" />,
-      title: "Unified Coding Profiles Dashboard",
-      description: "Analyze all your coding profiles (LeetCode, CodeChef, CodeForces) in one comprehensive dashboard with performance metrics and insights."
-    },
-    {
-      icon: <Calendar className="h-6 w-6 text-blue-500" />,
-      title: "Contest Reminders & Calendar",
-      description: "Never miss a coding contest with automated reminders and a unified calendar showing all upcoming contests across platforms."
-    },
-    {
-      icon: <TrendingUp className="h-6 w-6 text-blue-500" />,
-      title: "Performance Analytics",
-      description: "Track your progress over time with detailed analytics and visualizations of your problem-solving patterns and contest performance."
-    },
-    {
-      icon: <Code className="h-6 w-6 text-blue-500" />,
-      title: "Multi-Platform Integration",
-      description: "Connect your CodeChef, LeetCode, and CodeForces accounts for centralized tracking and analysis."
-    },
-  ];
+const Start = () => {
+  const { resolvedTheme, toggleTheme } = useTheme();
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      {/* Navigation */}
-      <nav className={`fixed w-full z-10 transition-all duration-300 ${isScrolled ? 'bg-white dark:bg-gray-900 shadow-md' : 'bg-transparent'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">Unicode</span>
-              </div>
-              <div className="hidden md:block">
-                <div className="ml-10 flex items-baseline space-x-4">
-                  <a href="#" className="text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md font-medium">Home</a>
-                  <a href="#features" className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md font-medium">Features</a>
+    <div className="min-h-screen text-[var(--text-primary)]">
+      <header className="sticky top-0 z-40 border-b border-[var(--border-muted)] bg-[var(--header-bg)] backdrop-blur-md">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+          <a href="/" className="flex items-center gap-3">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand-color)]">
+              {"</>"}
+            </span>
+            <div>
+              <p className="text-lg font-semibold">Unicode</p>
+              <p className="text-xs text-[var(--text-muted)]">Competitive Programming Tracker</p>
+            </div>
+          </a>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border-muted)] bg-[var(--surface-muted)] transition hover:border-[var(--brand-color)]"
+              aria-label={`Switch to ${resolvedTheme === "dark" ? "light" : "dark"} mode`}
+            >
+              {resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
+            <a
+              href="/login"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-[var(--text-primary)] transition hover:bg-[var(--surface-muted)]"
+            >
+              Login
+            </a>
+            <a
+              href="/signup"
+              className="rounded-lg bg-[var(--brand-color)] px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+            >
+              Create Account
+            </a>
+          </div>
+        </div>
+      </header>
+
+      <main>
+        <section className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-10 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:py-24 lg:px-8">
+          <div className="space-y-6">
+            <span className="inline-flex rounded-full border border-[var(--border-muted)] bg-[var(--surface)] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[var(--brand-color)]">
+              Modern CP Workflow
+            </span>
+            <h1 className="text-4xl font-semibold leading-tight sm:text-5xl">
+              Track your coding performance with clarity and momentum.
+            </h1>
+            <p className="max-w-xl text-base text-[var(--text-muted)] sm:text-lg">
+              Unicode centralizes your coding profiles, contest pipeline, and analytics so you can focus on improving instead of switching tabs.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <a
+                href="/signup"
+                className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand-color)] px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+              >
+                Get Started
+                <ArrowRight className="h-4 w-4" />
+              </a>
+              <a
+                href="/login"
+                className="inline-flex items-center gap-2 rounded-xl border border-[var(--border-muted)] bg-[var(--surface)] px-5 py-3 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--surface-muted)]"
+              >
+                Open Dashboard
+              </a>
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="rounded-3xl border border-[var(--border-muted)] bg-[var(--surface)] p-6 shadow-xl backdrop-blur-sm">
+              <div className="mb-6 grid grid-cols-3 gap-3">
+                <div className="rounded-xl bg-[var(--surface-muted)] p-3">
+                  <p className="text-xs text-[var(--text-muted)]">Total Solved</p>
+                  <p className="mt-1 text-xl font-semibold">2,184</p>
+                </div>
+                <div className="rounded-xl bg-[var(--surface-muted)] p-3">
+                  <p className="text-xs text-[var(--text-muted)]">Active Streak</p>
+                  <p className="mt-1 text-xl font-semibold">31 days</p>
+                </div>
+                <div className="rounded-xl bg-[var(--surface-muted)] p-3">
+                  <p className="text-xs text-[var(--text-muted)]">Live Contests</p>
+                  <p className="mt-1 text-xl font-semibold">2</p>
                 </div>
               </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <a href="/login" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">Login</a>
-              <a href="/signup" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-300">Sign Up</a>
+              <div className="rounded-2xl border border-[var(--border-muted)] bg-[var(--surface-strong)] p-4">
+                <p className="text-sm font-semibold">Next Contest</p>
+                <p className="mt-1 text-sm text-[var(--text-muted)]">Codeforces Round #1043</p>
+                <p className="mt-2 text-xs text-[var(--brand-color)]">Starts in 2h 14m</p>
+              </div>
             </div>
           </div>
-        </div>
-      </nav>
+        </section>
 
-      {/* Hero Section */}
-      <motion.div
-        className="pt-32 pb-12 md:pt-40 md:pb-20"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <motion.h1
-              className="text-4xl tracking-tight font-extrabold text-gray-900 dark:text-white sm:text-5xl md:text-6xl"
-              variants={itemVariants}
-            >
-              <span className="block">Elevate Your</span>
-              <span className="block text-blue-600 dark:text-blue-400">Competitive Coding</span>
-            </motion.h1>
-            <motion.p
-              className="mt-3 max-w-md mx-auto text-base text-gray-500 dark:text-gray-400 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl"
-              variants={itemVariants}
-            >
-              Unicode unifies your competitive coding profiles, tracks your progress, and keeps you updated on all upcoming contests across platforms - all in one place.
-            </motion.p>
-            <motion.div
-              className="mt-8 sm:flex sm:justify-center"
-              variants={itemVariants}
-            >
-              <div className="rounded-md shadow">
-                <a href="/signup" className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10 transition-colors duration-300">
-                  Get Started Free
-                </a>
-              </div>
-              <div className="mt-3 rounded-md shadow sm:mt-0 sm:ml-3">
-                <a href="#features" className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 dark:text-blue-400 dark:bg-gray-800 dark:hover:bg-gray-700 md:py-4 md:text-lg md:px-10 transition-colors duration-300">
-                  Explore Features
-                </a>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Features Section */}
-      <section id="features" className="py-12 bg-white dark:bg-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
-              Your Complete Competitive Coding Companion
-            </h2>
-            <p className="mt-4 max-w-2xl mx-auto text-xl text-gray-500 dark:text-gray-400">
-              All the tools you need to excel in coding competitions and track your progress.
+        <section className="mx-auto w-full max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
+          <div className="mb-8">
+            <h2 className="text-2xl font-semibold sm:text-3xl">Everything in one clean workflow</h2>
+            <p className="mt-2 max-w-2xl text-sm text-[var(--text-muted)] sm:text-base">
+              A consistent UI system built for fast scanning, better decisions, and daily practice.
             </p>
           </div>
 
-          <div className="mt-16 space-y-12">
-            {features.map((feature, index) => (
-              <motion.div
-                key={index}
-                className="flex flex-col items-center"
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, margin: "-100px" }}
-                variants={featureVariants}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {features.map((feature) => (
+              <article
+                key={feature.title}
+                className="rounded-2xl border border-[var(--border-muted)] bg-[var(--surface)] p-5 shadow-sm backdrop-blur-sm"
               >
-                <div className="relative p-8 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 w-full max-w-2xl">
-                  <div className="absolute -top-3 -left-3 p-3 bg-white dark:bg-gray-800 rounded-full shadow-md justify-center items-center flex">
-                    {feature.icon}
-                  </div>
-                  <h3 className="mt-8 text-lg font-medium text-gray-900 dark:text-white">{feature.title}</h3>
-                  <p className="mt-2 text-base text-gray-500 dark:text-gray-400">{feature.description}</p>
+                <div className="mb-3 inline-flex rounded-lg bg-[var(--brand-soft)] p-2 text-[var(--brand-color)]">
+                  {feature.icon}
                 </div>
-              </motion.div>
+                <h3 className="text-lg font-semibold">{feature.title}</h3>
+                <p className="mt-2 text-sm text-[var(--text-muted)]">{feature.description}</p>
+              </article>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* Footer - Simplified like the image */}
-      <footer className="bg-gray-900 text-gray-300 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center justify-center space-y-6">
-            <div className="flex space-x-6">
-              <a href="/privacy" className="text-gray-400 hover:text-blue-400 transition-colors duration-300">
-                Support & Privacy
-              </a>
-            </div>
-            <div className="flex items-center space-x-4">
-              <a
-                href="https://github.com/suveerprasad/cp-tracker"
-                className="text-gray-400 hover:text-blue-400 transition-colors duration-300"
-                aria-label="GitHub"
-              >
-                <Github className="h-6 w-6" />
-              </a>
-            </div>
-
-            <p className="text-sm text-gray-400">
-              © 2025 Unicode. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
+        </section>
+      </main>
     </div>
   );
-}
+};
+
+export default Start;
