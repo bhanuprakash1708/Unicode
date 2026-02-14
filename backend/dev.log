@@ -61,3 +61,18 @@ Found 32 contest history entries for bhanu1716
 Found 32 contest history entries for bhanu1716
 Found 32 contest history entries for bhanu1716
 Found 32 contest history entries for bhanu1716
+Found 32 contest history entries for bhanu1716
+Found 32 contest history entries for bhanu1716
+Found 32 contest history entries for bhanu1716
+Found 32 contest history entries for bhanu1716
+Found 32 contest history entries for bhanu1716
+Found 32 contest history entries for bhanu1716
+Found 32 contest history entries for bhanu1716
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting child process[39m
+[32m[nodemon] starting `node server.js server.js`[39m
+(node:22796) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Server running in development mode on port 3000
+Backend ready at http://localhost:3000
+^C^C
