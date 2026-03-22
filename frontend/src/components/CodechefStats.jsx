@@ -53,7 +53,7 @@ const CodeChefStats = ({ data }) => {
           {/* Rating Display - Centered */}
           <div className="flex flex-col items-center mb-4">
             {profileInfo.stars && renderStars(profileInfo.stars)}
-            <div className="text-4xl font-bold text-white mb-1">{profileInfo.rating}</div>
+            <div className="text-4xl font-bold text-[var(--text-primary)] mb-1">{profileInfo.rating}</div>
             <div className="flex items-center gap-1 text-[var(--text-muted)]">
               <span>Highest: {profileInfo.highestRating}</span>
             </div>
